@@ -460,28 +460,6 @@ allSections.forEach(section => {
   if (localStorage.getItem(`launchpad-collapse-${section.dataset.category}`) === 'true') section.classList.add('collapsed');
 });
 
-// ===== SEARCH SUGGESTIONS =====
-const searchSuggestions = document.getElementById('searchSuggestions');
-searchInput.addEventListener('input', () => {
-  const q = searchInput.value.toLowerCase().trim();
-  if (!q) { searchSuggestions.classList.remove('open'); return; }
-  const ms = Array.from(allCards).filter(c => c.textContent.toLowerCase().includes(q)).slice(0, 8);
-  if (ms.length === 0) {
-    searchSuggestions.innerHTML = '<div class="ss-empty">Sin resultados</div>'; searchSuggestions.classList.add('open');
-    return;
-  }
-  searchSuggestions.innerHTML = ms.map(c => {
-    const t = c.querySelector('h3')?.textContent || '';
-    const icEl = c.querySelector('.card-icon');
-    const ic = icEl?.dataset.icon || icEl?.textContent || 'link';
-    const cat = c.closest('.section')?.querySelector('h2')?.textContent || '';
-    return `<a href="${c.getAttribute('href')}" target="_blank" class="ss-item"><span class="ss-icon" style="background:var(--primary-light)">${renderIconHtml(ic)}</span><span class="ss-title">${escHtml(t)}</span><span class="ss-cat">${escHtml(cat)}</span></a>`;
-  }).join('');
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-  searchSuggestions.classList.add('open');
-});
-document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) searchSuggestions.classList.remove('open'); });
-
 // ===== CATEGORY PROGRESS =====
 const _visitedKey = 'launchpad-visited';
 function getVisited() { try { return JSON.parse(localStorage.getItem(_visitedKey)) || []; } catch { return []; } }
