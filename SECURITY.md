@@ -2,6 +2,8 @@
 
 This site is hosted on GitHub Pages, so all frontend code is public. Do not put secrets, passwords, private keys, or confidential information in `index.html`, `css/`, or `js/`.
 
+The portal UI now requires a verified Google account ending in `@cms.edu.do` before showing the page. Firestore reads should also be limited to those accounts. For strict data secrecy, do not keep private portal links hard-coded in HTML; store them only in Firestore or another protected backend.
+
 ## Required Firebase settings
 
 1. Publish the included `firestore.rules` file in Firebase Console > Firestore Database > Rules.
@@ -10,13 +12,18 @@ This site is hosted on GitHub Pages, so all frontend code is public. Do not put 
    - `nostradamesp.github.io`
    - your future custom domain, if any
 4. Consider enabling Firebase App Check for Firestore with reCAPTCHA Enterprise or reCAPTCHA v3.
-5. Do not rely on the frontend admin check alone. Frontend checks only improve UI behavior; Firestore Rules are the real protection.
+5. Do not rely on frontend checks alone. Frontend checks improve the UI, but Firestore Rules are the real protection for Firebase data.
+
+## Current portal logic
+
+The portal unlocks for signed-in, verified Google accounts ending in:
+
+- `@cms.edu.do`
 
 ## Current admin logic
 
 The frontend allows edit mode only for:
 
-- any signed-in Google account ending in `@cms.edu.do`
 - `erojas@cms.edu.do`
 
-The same rule is mirrored in `firestore.rules`. If you want only specific emails, remove the domain rule and list exact emails instead.
+The same admin rule is mirrored in `firestore.rules`. If more staff should edit, add exact emails to both `ADMIN_EMAILS` in `js/app.js` and `isAdmin()` in `firestore.rules`.

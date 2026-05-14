@@ -48,11 +48,11 @@ document.querySelectorAll('[data-section]').forEach(a => {
     const target = document.querySelector(`section[data-category="${section}"]`);
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      catButtons.forEach(b => b.classList.remove('active'));
+      categoryFilters?.querySelectorAll('button').forEach(b => b.classList.remove('active'));
       document.querySelector(`#categoryFilters button[data-cat="${section}"]`)?.classList.add('active');
       allSections.forEach(s => s.style.display = s.dataset.category === section ? '' : 'none');
       allCards.forEach(c => c.classList.remove('card-hidden'));
-      noResults.style.display = 'none';
+      if (noResults) noResults.style.display = 'none';
       searchInput.value = '';
       searchClear.classList.remove('visible');
       favsFilterActive = false;
@@ -106,24 +106,25 @@ function addStarsToCards() {
   const favs = getFavorites();
   allCards.forEach(card => {
     if (card.querySelector('.star-btn')) return;
+    const icon = card.querySelector('.card-icon');
     const btn = document.createElement('button');
     btn.className = 'star-btn';
     btn.textContent = '☆';
     btn.setAttribute('aria-label', 'Marcar como favorito');
     const url = card.getAttribute('href');
-    if (favs.includes(url)) btn.classList.add('starred');
+    if (favs.includes(url)) { btn.classList.add('starred'); btn.textContent = '★'; }
     btn.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
       const favs2 = getFavorites();
       const idx = favs2.indexOf(url);
-      if (idx > -1) { favs2.splice(idx, 1); btn.classList.remove('starred'); }
-      else { favs2.push(url); btn.classList.add('starred'); }
+      if (idx > -1) { favs2.splice(idx, 1); btn.classList.remove('starred'); btn.textContent = '☆'; }
+      else { favs2.push(url); btn.classList.add('starred'); btn.textContent = '★'; }
       saveFavorites(favs2);
       updateStarBadge();
       if (favsBtn.classList.contains('active')) applyFavsFilter();
     });
-    card.prepend(btn);
+    (icon || card).appendChild(btn);
   });
 }
 let favsFilterActive = false;
@@ -178,19 +179,16 @@ function renderHistory() {
     el.className = 'hd-item';
     el.href = item.url;
     el.target = '_blank';
-    el.innerHTML = `<div class="hd-icon" style="background:var(--primary-light)">${renderIconHtml(item.icon || 'link')}</div><span class="hd-title">${item.title}</span>`;
+    el.innerHTML = `<div class="hd-icon" style="background:var(--primary-light)">🔗</div><span class="hd-title">${item.title}</span>`;
     historyList.appendChild(el);
   });
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 function trackHistory(card) {
   const title = card.querySelector('h3')?.textContent || 'Enlace';
   const url = card.getAttribute('href');
-  const ci = card.querySelector('.card-icon');
-  const icon = ci?.dataset.icon || ci?.textContent || 'link';
   let items = getHistory();
   items = items.filter(i => i.url !== url);
-  items.unshift({ title, url, icon });
+  items.unshift({ title, url });
   if (items.length > 8) items = items.slice(0, 8);
   saveHistory(items);
   updateHistoryBadge();
@@ -240,10 +238,10 @@ function filterCards() {
     section.style.display = hasVisible ? '' : 'none';
   });
   if (query && visibleCount === 0) {
-    searchTerm.textContent = query;
-    noResults.style.display = 'block';
+    if (searchTerm) searchTerm.textContent = query;
+    if (noResults) noResults.style.display = 'block';
   } else {
-    noResults.style.display = 'none';
+    if (noResults) noResults.style.display = 'none';
   }
 }
 searchInput.addEventListener('input', filterCards);
@@ -253,26 +251,24 @@ searchClear.addEventListener('click', () => {
   filterCards();
 });
 
-const catButtons = document.querySelectorAll('#categoryFilters button');
-catButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    favsFilterActive = false;
-    favsBtn.classList.remove('active');
-    catButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const cat = btn.dataset.cat;
-    allSections.forEach(section => {
-      if (cat === 'all') {
-        section.style.display = '';
-        allCards.forEach(c => c.classList.remove('card-hidden'));
-        noResults.style.display = 'none';
-        searchInput.value = '';
-        searchClear.classList.remove('visible');
-        return;
-      }
-      section.style.display = section.dataset.category === cat ? '' : 'none';
-    });
+const categoryFilters = document.getElementById('categoryFilters');
+function showCategory(cat) {
+  refreshDomRefs();
+  favsFilterActive = false;
+  favsBtn.classList.remove('active');
+  categoryFilters?.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  searchInput.value = '';
+  searchClear.classList.remove('visible');
+  allCards.forEach(c => c.classList.remove('card-hidden'));
+  allSections.forEach(section => {
+    section.style.display = (cat === 'all' || section.dataset.category === cat) ? '' : 'none';
   });
+  if (noResults) noResults.style.display = 'none';
+}
+categoryFilters?.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-cat]');
+  if (!btn) return;
+  showCategory(btn.dataset.cat);
 });
 
 // ===== TOOLTIP PREVIEW =====
@@ -282,12 +278,10 @@ allCards.forEach(card => {
     clearTimeout(tooltipTimeout);
     const title = card.querySelector('h3')?.textContent || '';
     const desc = card.querySelector('p')?.textContent || '';
-    const ci = card.querySelector('.card-icon');
-    const icon = ci?.dataset.icon || ci?.textContent || 'link';
+    const icon = card.querySelector('.card-icon')?.textContent || '🔗';
     tpTitle.textContent = title;
     tpDesc.textContent = desc;
-    tpScreenshot.innerHTML = renderIconHtml(icon);
-    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    tpScreenshot.textContent = icon;
     tooltipTimeout = setTimeout(() => {
       tooltip.classList.add('visible');
       positionTooltip(card);
@@ -415,11 +409,9 @@ function renderMostUsed() {
     const card = Array.from(allCards).find(c => c.getAttribute('href') === url);
     if (!card) return '';
     const title = card.querySelector('h3')?.textContent || '';
-    const ci = card.querySelector('.card-icon');
-    const icon = ci?.dataset.icon || ci?.textContent || 'link';
-    return `<a href="${escHtml(url)}" target="_blank" class="most-used-chip"><span class="mu-icon">${renderIconHtml(icon)}</span>${escHtml(title)}<span class="mu-count">${count}</span></a>`;
+    const icon = card.querySelector('.card-icon')?.textContent || '🔗';
+    return `<a href="${escHtml(url)}" target="_blank" class="most-used-chip"><span class="mu-icon">${icon}</span>${escHtml(title)}<span class="mu-count">${count}</span></a>`;
   }).join('');
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
 // ===== ANNOUNCEMENT BANNER =====
@@ -460,6 +452,14 @@ allSections.forEach(section => {
   if (localStorage.getItem(`launchpad-collapse-${section.dataset.category}`) === 'true') section.classList.add('collapsed');
 });
 
+// ===== SEARCH SUGGESTIONS =====
+const searchSuggestions = document.getElementById('searchSuggestions');
+searchInput.addEventListener('input', () => {
+  searchSuggestions.innerHTML = '';
+  searchSuggestions.classList.remove('open');
+});
+document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) searchSuggestions.classList.remove('open'); });
+
 // ===== CATEGORY PROGRESS =====
 const _visitedKey = 'launchpad-visited';
 function getVisited() { try { return JSON.parse(localStorage.getItem(_visitedKey)) || []; } catch { return []; } }
@@ -496,7 +496,13 @@ const clearFavsBtnMgr = document.getElementById('clearFavsBtnManager');
 
 function updateStars() {
   const favs = getFavorites();
-  allCards.forEach(card => { const s = card.querySelector('.star-btn'); if (s) s.classList.toggle('starred', favs.includes(card.getAttribute('href'))); });
+  allCards.forEach(card => {
+    const s = card.querySelector('.star-btn');
+    if (!s) return;
+    const starred = favs.includes(card.getAttribute('href'));
+    s.classList.toggle('starred', starred);
+    s.textContent = starred ? '★' : '☆';
+  });
 }
 function renderFavsManager() {
   const favs = getFavorites();
@@ -507,11 +513,9 @@ function renderFavsManager() {
   favsManagerList.innerHTML = favs.map((url, i) => {
     const card = Array.from(allCards).find(c => c.getAttribute('href') === url);
     const title = card?.querySelector('h3')?.textContent || 'Enlace';
-    const ci = card?.querySelector('.card-icon');
-    const icon = ci?.dataset.icon || ci?.textContent || 'link';
-    return `<div class="fm-item" data-url="${escHtml(url)}" data-index="${i}" draggable="true"><span class="fm-drag-handle">⠿</span><span class="fm-icon" style="background:var(--primary-light)">${renderIconHtml(icon)}</span><span class="fm-title">${escHtml(title)}</span><button class="fm-remove" data-url="${escHtml(url)}">✕</button></div>`;
+    const icon = card?.querySelector('.card-icon')?.textContent || '🔗';
+    return `<div class="fm-item" data-url="${escHtml(url)}" data-index="${i}" draggable="true"><span class="fm-drag-handle">⠿</span><span class="fm-icon" style="background:var(--primary-light)">${icon}</span><span class="fm-title">${escHtml(title)}</span><button class="fm-remove" data-url="${escHtml(url)}">✕</button></div>`;
   }).join('');
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   let dragSrc = null;
   favsManagerList.querySelectorAll('.fm-item').forEach(item => {
     item.addEventListener('dragstart', e => { dragSrc = item; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.dataset.url); });
@@ -567,76 +571,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ===== LUCIDE ICONS =====
-const PRESET_COLORS = ['#b00', '#c00', '#800', '#e44', '#333', '#1a56db', '#059669', '#d97706'];
-const PRESET_GRADIENTS = ['linear-gradient(135deg, #b00 0%, #d00 50%, #b00 100%)', 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'];
-const LUCIDE_ICONS = [
-  'building', 'file-text', 'link', 'folder', 'book', 'book-open',
-  'graduation-cap', 'school', 'users', 'settings', 'tool', 'wrench',
-  'calendar', 'clock', 'bell', 'shield', 'heart', 'activity',
-  'bar-chart', 'pie-chart', 'globe', 'mail', 'message-circle', 'phone',
-  'camera', 'video', 'music', 'star', 'award', 'target', 'zap',
-  'search', 'home', 'grid', 'list', 'check-circle', 'alert-circle',
-  'info', 'help-circle', 'external-link', 'download', 'upload',
-  'printer', 'monitor'
-];
-
-const EMOJI_TO_LUCIDE = {
-  '🏫': 'building', '📋': 'clipboard', '📚': 'book', '📖': 'book-open',
-  '📊': 'bar-chart', '📅': 'calendar', '📆': 'calendar', '🗓': 'calendar',
-  '⚙️': 'settings', '🔧': 'wrench', '📁': 'folder', '📂': 'folder-open',
-  '🗂️': 'folder', '📝': 'file-text', '✏️': 'pen', '✏': 'pen',
-  '📢': 'megaphone', '🔔': 'bell', '🏥': 'building', '👥': 'users',
-  '🎒': 'backpack', '🏛️': 'building', '📈': 'trending-up', '📞': 'phone',
-  '🖥️': 'monitor', '💻': 'laptop', '📱': 'smartphone', '🌐': 'globe',
-  '💡': 'lightbulb', '⭐': 'star', '🎯': 'target', '🏆': 'award',
-  '🚀': 'rocket', '🎓': 'graduation-cap', '🎨': 'palette', '🔗': 'link',
-  '🎫': 'ticket', '📜': 'scroll', '📘': 'book', '🎧': 'headphones',
-  '🎙️': 'mic', '📷': 'camera', '👍': 'thumbs-up', '🖼️': 'image',
-  '📑': 'bookmark', '⚠️': 'alert-triangle', '⚠': 'alert-triangle',
-  '🗺️': 'map', '🏠': 'home', '⏰': 'clock', '⏱️': 'clock',
-  '✈️': 'plane', '🎉': 'party-popper', '💪': 'activity', '🚗': 'car',
-  '🏦': 'building', '🌍': 'globe', '💰': 'wallet', '✉️': 'mail',
-  '📬': 'mail', '📸': 'camera', '👀': 'eye', '💬': 'message-circle',
-  '📄': 'file', '❓': 'help-circle', '❔': 'help-circle', '🏖️': 'umbrella',
-  '🔄': 'refresh-cw', '🖨️': 'printer', '🏷️': 'tag', '🚨': 'alert-triangle',
-  '📽️': 'video', '📰': 'newspaper', '🎁': 'gift', '✅': 'check-circle',
-  '❌': 'x-circle', '🔍': 'search', '🛡️': 'shield', '🛡': 'shield',
-  '🔥': 'flame', '🏋️': 'dumbbell', '📇': 'contact', '📏': 'ruler',
-  '🗳': 'vote', '🎞️': 'film', '🔩': 'settings', '🔢': 'hash',
-  '🤱': 'users', '🐾': 'activity', '🦷': 'activity', '🏀': 'circle',
-  '👨‍🏫': 'users', '👩‍🏫': 'users', '🎃': 'circle', '🎙': 'mic',
-  '💉': 'activity', '📺': 'monitor', '🎚': 'sliders', '🏈': 'circle',
-  '🎽': 'activity', '🏅': 'award', '📌': 'map-pin', '🔖': 'bookmark',
-  '🆕': 'sparkles', '🔄': 'refresh-cw', '🌎': 'globe', '🌏': 'globe',
-  '📒': 'book', '📕': 'book', '📗': 'book', '📙': 'book',
-  '📃': 'file-text', '📋': 'clipboard', '📉': 'trending-down',
-  '🔐': 'lock', '🔒': 'lock', '🔓': 'unlock', '🖋': 'pen',
-  '🖊': 'pen', '🖍': 'pen', '✂️': 'scissors', '🔗': 'link',
-  '🦈': 'zap', '🎮': 'gamepad', '👤': 'user', '👤': 'user',
-};
-
-function emojiToLucide(e) {
-  return EMOJI_TO_LUCIDE[e] || EMOJI_TO_LUCIDE[e.replace(/\uFE0F/g, '')];
-}
-
-function isLucideIcon(val) {
-  return val && (LUCIDE_ICONS.includes(val) || emojiToLucide(val));
-}
-
-function renderIconHtml(icon) {
-  if (!icon) return '';
-  if (LUCIDE_ICONS.includes(icon)) return '<i data-lucide="' + icon + '"></i>';
-  const mapped = emojiToLucide(icon);
-  if (mapped) return '<i data-lucide="' + mapped + '"></i>';
-  return icon;
-}
-
-function lucideGridHtml(selected) {
-  const sel = emojiToLucide(selected) || selected;
-  return LUCIDE_ICONS.map(n => '<div class="ap-lucide-opt' + (n === sel ? ' active' : '') + '" data-icon="' + n + '"><i data-lucide="' + n + '"></i></div>').join('');
-}
-
 // ===== INIT =====
 initCompact();
 renderMostUsed();
@@ -656,12 +590,18 @@ const firebaseConfig = {
   measurementId: "G-26MSY5BGGP"
 };
 
-let fbReady = false, db = null, auth = null, fbUser = null;
+let fbReady = false, db = null, auth = null, fbUser = null, portalUser = null;
 let fbCats = [], fbCards = [], fbSite = {};
 let pendingLogin = false;
 
+const SCHOOL_DOMAIN = '@cms.edu.do';
 const ADMIN_DOMAIN = ''; // safer default: no whole-domain editing. Put '@cms.edu.do' only if every cms.edu.do account should edit.
 const ADMIN_EMAILS = ['erojas@cms.edu.do'];
+
+function isSchoolUser(user = portalUser) {
+  const email = String(user?.email || '').toLowerCase();
+  return !!user && user.emailVerified !== false && email.endsWith(SCHOOL_DOMAIN);
+}
 
 function isAuthorizedAdmin(user = fbUser) {
   const email = String(user?.email || '').toLowerCase();
@@ -671,6 +611,37 @@ function isAuthorizedAdmin(user = fbUser) {
 
 function canWriteToFirebase() {
   return !!(fbReady && db && isAuthorizedAdmin());
+}
+
+function protectedPlaceholderHtml(title = 'Contenido protegido', message = 'Inicia sesión con tu cuenta del colegio para cargar los recursos.') {
+  return '<div class="portal-empty" id="portalEmpty"><h3>' + escHtml(title) + '</h3><p>' + escHtml(message) + '</p></div>' +
+    '<div class="no-results" id="noResults"><div class="nr-icon">🔍</div><h3>Sin resultados</h3><p>No encontramos nada para "<span id="searchTerm"></span>". Intenta con otro término.</p></div>';
+}
+
+function clearProtectedContent(clearState = true) {
+  if (clearState) {
+    fbCats = [];
+    fbCards = [];
+  }
+  const mc = document.querySelector('.main-content');
+  if (mc) mc.innerHTML = protectedPlaceholderHtml();
+  const mostUsedGrid = document.getElementById('mostUsedGrid');
+  const mostUsedSection = document.getElementById('mostUsedSection');
+  if (mostUsedGrid) mostUsedGrid.innerHTML = '';
+  if (mostUsedSection) mostUsedSection.classList.remove('visible');
+  refreshDomRefs();
+}
+
+function updatePortalAccess(user = portalUser, status) {
+  const allowed = isSchoolUser(user);
+  const gateStatus = document.getElementById('portalGateStatus');
+  document.body.classList.toggle('portal-locked', !allowed);
+  document.body.classList.toggle('portal-checking', false);
+  document.body.classList.toggle('portal-authenticated', allowed);
+  if (!allowed) clearProtectedContent();
+  if (gateStatus) {
+    gateStatus.textContent = status || (allowed ? 'Acceso autorizado.' : 'Inicia sesión con tu correo @cms.edu.do.');
+  }
 }
 
 function disableEditMode(reason) {
@@ -725,33 +696,44 @@ function initFB() {
     db.settings({ merge: true });
     fbReady = true;
     console.log("Firebase initialized");
+    // Handle redirect result (popup blocked fallback)
     auth.getRedirectResult().catch(e => console.error('getRedirectResult:', e));
     auth.onAuthStateChanged(user => {
-      const allowed = isAuthorizedAdmin(user);
-      fbUser = allowed ? user : null;
+      const schoolAllowed = isSchoolUser(user);
+      const adminAllowed = isAuthorizedAdmin(user);
+      portalUser = schoolAllowed ? user : null;
+      fbUser = adminAllowed ? user : null;
+      updatePortalAccess(portalUser);
       updateAdminControls(fbUser);
 
-      if (allowed) {
+      if (schoolAllowed) {
         document.getElementById('apUserInfo').innerHTML = user.photoURL ? '<img src="' + escHtml(user.photoURL) + '" alt=""> ' + escHtml(user.email) : '👤 ' + escHtml(user.email);
-        document.getElementById('apLogout')?.classList.add('visible');
-        loadFB({ seedIfEmpty: true }).then(hideLoading).catch(hideLoading);
-        if (pendingLogin) {
+        document.getElementById('apLogout')?.classList.toggle('visible', adminAllowed);
+        loadFB({ seedIfEmpty: adminAllowed }).then(hideLoading).catch(hideLoading);
+        if (pendingLogin && adminAllowed) {
           pendingLogin = false;
           document.getElementById('adminOverlay').classList.add('open');
         }
       } else {
+        portalUser = null;
+        fbUser = null;
         document.getElementById('apUserInfo').innerHTML = '';
         document.getElementById('apLogout')?.classList.remove('visible');
         document.getElementById('adminOverlay')?.classList.remove('open');
         pendingLogin = false;
-        loadFB({ seedIfEmpty: false }).catch(() => {});
         if (user) {
-          showToast('Ese correo no tiene permisos de administrador.', 'error');
+          updatePortalAccess(null, 'Ese correo no pertenece al dominio del colegio.');
+          showToast('Usa tu correo @cms.edu.do para entrar.', 'error');
           auth.signOut();
+        } else {
+          updatePortalAccess(null);
         }
       }
     });
-  } catch(e) { console.error('initFB CATCH:', e.message, e.stack); }
+  } catch(e) {
+    console.error('initFB CATCH:', e.message, e.stack);
+    updatePortalAccess(null, 'No se pudo iniciar seguridad. Revisa Firebase.');
+  }
 }
 
 function showToast(msg, type) {
@@ -814,12 +796,14 @@ function applyHeroBackground(el, bg, position = '50% 50%', size = 'cover') {
     el.style.backgroundPosition = position || '50% 50%';
     el.style.backgroundRepeat = 'no-repeat';
     el.style.animation = 'none';
+    el.classList.add('has-image-bg');
   } else {
     el.style.background = bg;
     el.style.backgroundSize = '200% 200%';
     el.style.backgroundPosition = 'center';
     el.style.backgroundRepeat = 'no-repeat';
     el.style.animation = '';
+    el.classList.remove('has-image-bg');
   }
 }
 
@@ -903,6 +887,7 @@ function loginGoogle() {
   showToast('Abriendo ventana de Google...', 'info');
   pendingLogin = true;
   const p = new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({ hd: 'cms.edu.do' });
   auth.signInWithPopup(p).catch(e => {
     console.error('signInWithPopup error:', e);
     hideLoading();
@@ -924,14 +909,20 @@ function loginGoogle() {
 function logoutGoogle() {
   pendingLogin = false;
   fbUser = null;
+  portalUser = null;
   disableEditMode();
   updateAdminControls(null);
-  document.getElementById('apLogout')?.classList.remove('visible');
-  document.getElementById('apUserInfo').innerHTML = '';
+  updatePortalAccess(null);
   document.getElementById('adminOverlay')?.classList.remove('open');
-  if (!auth) { showToast('Sesión cerrada', 'success'); return; }
-  auth.signOut().then(() => showToast('Sesión cerrada', 'success'))
-    .catch(e => { console.error('signOut error:', e); showToast('Error al cerrar sesión: ' + e.message, 'error'); });
+  if (!auth) return;
+  auth.signOut().then(() => {
+    fbUser = null;
+    portalUser = null;
+    disableEditMode();
+    updateAdminControls(null);
+    updatePortalAccess(null, 'Sesión cerrada.');
+    showToast('Sesión cerrada', 'success');
+  }).catch(e => showToast('Error al cerrar sesión: ' + e.message, 'error'));
 }
 
 async function loadFB(options = {}) {
@@ -947,33 +938,12 @@ async function loadFB(options = {}) {
       fbSite = { heroBg: 'linear-gradient(135deg, #b00 0%, #d00 50%, #b00 100%)', heroBgPosition: '50% 50%', heroBgSize: 'cover', primaryColor: '#b00', mascot: '\u{1F988}', title: 'Sharks Launch Pad', announcement: '', heroTitleColor: '#ffffff', heroAccentColor: '#ff6b6b', heroSubtitleColor: 'rgba(255,255,255,0.7)', heroSearchTextColor: '#ffffff' };
       if (seedIfEmpty) await db.collection('config').doc('site').set(fbSite);
     }
-    if (!cSnap.empty) fbCats = cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    else if (seedIfEmpty) {
-      fbCats = [];
-      document.querySelectorAll('.section').forEach((s, i) => {
-        const si = s.querySelector('.sec-icon'); fbCats.push({ name: s.querySelector('h2')?.textContent || '', icon: si?.dataset.icon || si?.textContent || 'folder', order: i, enabled: true });
-      });
-      for (const c of fbCats) {
-        const r = await db.collection('categories').add(c);
-        c.id = r.id;
-      }
+    fbCats = cSnap.empty ? [] : cSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    fbCards = cdSnap.empty ? [] : cdSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (seedIfEmpty && (!fbCats.length || !fbCards.length)) {
+      console.info('Firestore is empty. Add categories and links from the admin panel.');
     }
-    if (!cdSnap.empty) fbCards = cdSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    else if (seedIfEmpty) {
-      fbCards = [];
-      document.querySelectorAll('.section').forEach(sec => {
-        const cn = sec.querySelector('h2')?.textContent || '';
-        const c = fbCats.find(x => x.name === cn);
-        Array.from(sec.querySelectorAll('.card')).forEach((el, i) => {
-          const ci = el.querySelector('.card-icon'); fbCards.push({ title: el.querySelector('h3')?.textContent || '', description: el.querySelector('p')?.textContent || '', url: el.getAttribute('href') || '', icon: ci?.dataset.icon || ci?.textContent || 'link', categoryId: c?.id || '', order: i, isNew: el.dataset.new === 'true', isUpdated: el.dataset.updated === 'true', enabled: true });
-        });
-      });
-      for (const cd of fbCards) {
-        const r = await db.collection('cards').add(cd);
-        cd.id = r.id;
-      }
-    }
-    if (fbCats.length && fbCards.length) renderFB();
+    renderFB();
     renderAdminCats();
     renderAdminCards_();
     fillCardFilter();
@@ -1007,17 +977,17 @@ function catBg(name) {
 }
 
 function catSlug(name) {
-  const slug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-  const SHORT = {
-    'formspoliciesprocedures': 'forms',
-    'communications': 'comms',
-    'elementaryschool': 'elementary',
-    'middleschool': 'middle',
-    'highschool': 'high',
-    'healthoffice': 'health',
-    'humanresources': 'hhrr',
+  const normalized = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const aliases = {
+    formspoliciesprocedures: 'forms',
+    communications: 'comms',
+    elementaryschool: 'elementary',
+    middleschool: 'middle',
+    highschool: 'high',
+    healthoffice: 'health',
+    humanresources: 'hhrr'
   };
-  return SHORT[slug] || slug;
+  return aliases[normalized] || normalized;
 }
 
 function bootstrapStateFromDom() {
@@ -1027,7 +997,7 @@ function bootstrapStateFromDom() {
     fbCats = sections.map((s, i) => ({
       id: 'static_cat_' + i,
       name: s.querySelector('h2')?.textContent || '',
-      icon: s.querySelector('.sec-icon')?.dataset.icon || s.querySelector('.sec-icon')?.textContent || 'folder',
+      icon: s.querySelector('.sec-icon')?.textContent || '\u{1F4C1}',
       order: i,
       enabled: true
     }));
@@ -1044,7 +1014,7 @@ function bootstrapStateFromDom() {
           title: el.querySelector('h3')?.textContent || '',
           description: el.querySelector('p')?.textContent || '',
           url: el.getAttribute('href') || '',
-          icon: el.querySelector('.card-icon')?.dataset.icon || el.querySelector('.card-icon')?.textContent || 'link',
+          icon: el.querySelector('.card-icon')?.textContent || '\u{1F517}',
           categoryId: cat?.id || '',
           order: i,
           isNew: el.dataset.new === 'true',
@@ -1057,30 +1027,35 @@ function bootstrapStateFromDom() {
 }
 
 function renderFB() {
-  const container = document.getElementById('sectionsContainer');
-  if (!container) return;
+  const mc = document.querySelector('.main-content');
+  if (!mc) return;
   let o = '';
+  let renderedSections = 0;
   [...fbCats].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(cat => {
     if (cat.enabled === false) return;
     const cc = fbCards.filter(c => c.categoryId === cat.id && c.enabled !== false).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     if (cc.length === 0) return;
+    renderedSections++;
     const bg = catBg(cat.name);
     const slug = catSlug(cat.name);
     o += '<section class="section" data-category="' + escHtml(slug) + '">';
-    o += '<div class="section-header"><div class="sec-icon" style="background:' + bg + '" data-icon="' + escHtml(cat.icon || 'folder') + '">' + renderIconHtml(cat.icon || 'folder') + '</div><h2>' + escHtml(cat.name) + '</h2><span class=\"sec-count\">' + cc.length + '</span></div>';
+    o += '<div class="section-header"><div class="sec-icon" style="background:' + bg + '">' + (cat.icon || '\u{1F4C1}') + '</div><h2>' + escHtml(cat.name) + '</h2><span class=\"sec-count\">' + cc.length + '</span></div>';
     o += '<div class="cards-grid">';
     cc.forEach(cd => {
       const d = (Math.random() * 0.5).toFixed(2);
       o += '<a href="' + escHtml(cd.url) + '" target="_blank" class="card" draggable="false" data-card-id="' + escHtml(cd.id) + '" style="animation-delay:' + d + 's"' + (cd.isNew ? ' data-new="true"' : '') + (cd.isUpdated ? ' data-updated="true"' : '') + '>';
-      o += '<div class="card-icon" style="background:' + bg + '" data-icon="' + escHtml(cd.icon || 'link') + '">' + renderIconHtml(cd.icon || 'link') + '</div>';
+      o += '<div class="card-icon" style="background:' + bg + '">' + (cd.icon || '\u{1F517}') + '</div>';
       o += '<div class="card-body"><h3>' + escHtml(cd.title) + '</h3><p>' + escHtml(cd.description) + '</p></div>';
       o += '<span class="card-arrow">→</span></a>';
     });
     o += '</div></section>';
   });
-  o += '<div class="no-results" id="noResults"><div class="nr-icon">🔍</div><h3>Sin resultados</h3><p>No encontramos nada para "<span id="searchTerm"></span>". Intenta con otro término.</p></div>';
-  container.innerHTML = o;
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+  if (!renderedSections) {
+    o += protectedPlaceholderHtml('Contenido no disponible', 'No hay recursos publicados todavía. Un administrador puede agregarlos desde el panel.');
+  } else {
+    o += '<div class="no-results" id="noResults"><div class="nr-icon">🔍</div><h3>Sin resultados</h3><p>No encontramos nada para "<span id="searchTerm"></span>". Intenta con otro término.</p></div>';
+  }
+  mc.innerHTML = o;
   reinitFeats();
 }
 
@@ -1091,8 +1066,7 @@ function reinitFeats() {
   updateStarBadge();
   allCards.forEach(card => {
     card.addEventListener('click', () => { trackHistory(card); const u = card.getAttribute('href'); trackClick(u); trackVisit(u); });
-    card.addEventListener('mouseenter', e => { clearTimeout(tooltipTimeout); tpTitle.textContent = card.querySelector('h3')?.textContent || ''; tpDesc.textContent = card.querySelector('p')?.textContent || ''; const ci = card.querySelector('.card-icon'); const ic = ci?.dataset.icon || ci?.textContent || 'link'; tpScreenshot.innerHTML = renderIconHtml(ic); if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400); });
-    card.addEventListener('mousemove', () => { if (tooltip.classList.contains('visible')) positionTooltip(card); });
+    card.addEventListener('mouseenter', e => { clearTimeout(tooltipTimeout); tpTitle.textContent = card.querySelector('h3')?.textContent || ''; tpDesc.textContent = card.querySelector('p')?.textContent || ''; tpScreenshot.textContent = card.querySelector('.card-icon')?.textContent || '🖥️'; tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400); });
     card.addEventListener('mouseleave', () => { clearTimeout(tooltipTimeout); tooltip.classList.remove('visible'); });
   });
   allCards.forEach(card => { card.style.animationPlayState = 'paused'; observer.observe(card); });
@@ -1100,6 +1074,8 @@ function reinitFeats() {
     if (card.dataset.new === 'true') { const b = document.createElement('span'); b.className = 'card-badge new'; b.textContent = 'Nuevo'; card.appendChild(b); }
     if (card.dataset.updated === 'true') { const b = document.createElement('span'); b.className = 'card-badge updated'; b.textContent = 'Actualizado'; card.appendChild(b); }
   });
+  renderMostUsed();
+  updateCategoryProgress();
 }
 
 // Admin events
@@ -1107,7 +1083,8 @@ function adminBtnClick() {
   if (isAuthorizedAdmin()) { document.getElementById('adminOverlay').classList.add('open'); if (fbCats.length) { renderAdminCats(); renderAdminCards_(); fillCardFilter(); } }
   else {
     if (!fbReady) showToast('Firebase no está listo. Revisa la consola (F12).', 'error');
-    else loginGoogle();
+    else if (!isSchoolUser()) loginGoogle();
+    else showToast('Tu cuenta puede ver el portal, pero no editarlo.', 'error');
   }
 }
 function initAdminEvents() {
@@ -1115,6 +1092,7 @@ function initAdminEvents() {
   const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
   on('apClose', 'click', () => { $('adminOverlay').classList.remove('open'); });
   on('apLogout', 'click', logoutGoogle);
+  on('portalLoginBtn', 'click', loginGoogle);
 }
 document.addEventListener('click', e => {
   const tab = e.target.closest('.ap-tab');
@@ -1128,6 +1106,10 @@ document.addEventListener('click', e => {
 });
 
 // Config form
+const PRESET_COLORS = ['#b00', '#c00', '#800', '#e44', '#333', '#1a56db', '#059669', '#d97706'];
+const PRESET_GRADIENTS = ['linear-gradient(135deg, #b00 0%, #d00 50%, #b00 100%)', 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'];
+const EMOJIS = ['🦈', '🏫', '🎓', '📚', '💡', '⭐', '🔥', '🚀', '🌟', '💻', '📱', '🎯', '🏆', '👨‍🏫', '👩‍🏫', '🌐', '📖', '✏️', '📊', '🎨', '📋', '📁', '📂', '🗂️', '⚙️', '🔧', '🛠️', '📅', '📆', '📝', '✅', '❌', '📢', '🔔', '🏥', '👥', '🎒', '🏛️', '🏀', '📈', '📞', '🖥️'];
+
 function fillConfigForm() {
   if (fbSite.heroBg) document.getElementById('apHeroBg').value = fbSite.heroBg;
   if (fbSite.primaryColor) { document.getElementById('apPrimaryColor').value = fbSite.primaryColor; document.querySelectorAll('.ap-color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === fbSite.primaryColor)); }
@@ -1157,12 +1139,11 @@ function renderAdminCats() {
   list.innerHTML = fbCats.map((c, i) =>
     '<div class="admin-item" data-id="' + escHtml(c.id) + '" data-index="' + i + '" draggable="true">' +
     '<span class="ai-drag">⠿</span>' +
-    '<span class="ai-icon" style="background:' + catBg(c.name) + '">' + renderIconHtml(c.icon || 'folder') + '</span>' +
+    '<span class="ai-icon" style="background:' + catBg(c.name) + '">' + (c.icon || '📁') + '</span>' +
     '<span class="ai-title">' + escHtml(c.name) + '</span>' +
     '<span class="ai-sub">' + (fbCards.filter(x => x.categoryId === c.id).length) + ' enlaces</span>' +
     '<div class="ai-actions"><button class="ai-edit" data-id="' + escHtml(c.id) + '" title="Editar">✏️</button><button class="ai-del" data-id="' + escHtml(c.id) + '" title="Eliminar">🗑️</button></div></div>'
   ).join('');
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   setupDrag('apCategoryList', async ids => { if (!canWriteToFirebase()) return; for (let i = 0; i < ids.length; i++) { await db.collection('categories').doc(ids[i]).update({ order: i }); } fbCats.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)); });
   document.querySelectorAll('#apCategoryList .ai-edit').forEach(b => b.addEventListener('click', () => openCatModal(b.dataset.id)));
   document.querySelectorAll('#apCategoryList .ai-del').forEach(b => b.addEventListener('click', () => delCat(b.dataset.id)));
@@ -1176,7 +1157,7 @@ function openCatModal(id) {
   showModal(cat ? 'Editar categoría' : 'Nueva categoría',
     '<div class="ap-form">' +
     '<label>Nombre <input type="text" id="apmCatName" value="' + (cat ? escHtml(cat.name) : '') + '" placeholder="Ej: Schoolwide"></label>' +
-    '<label>Icono <div class="ap-lucide-grid">' + lucideGridHtml(cat ? cat.icon : 'folder') + '</div><input type="text" id="apmCatIcon" value="' + (cat ? escHtml(cat.icon) : 'folder') + '"></label>' +
+    '<label>Icono <div class="ap-emoji-grid">' + EMOJIS.map(e => '<div class="ap-emoji-opt' + (cat && cat.icon === e ? ' active' : '') + '">' + e + '</div>').join('') + '</div><input type="text" id="apmCatIcon" value="' + (cat ? escHtml(cat.icon) : '📁') + '"></label>' +
     '</div>',
     async () => {
       if (!requireAdminAccess()) return;
@@ -1212,13 +1193,12 @@ function renderAdminCards_(filterId) {
     const cat = fbCats.find(c => c.id === cd.categoryId);
     return '<div class="admin-item" data-id="' + escHtml(cd.id) + '" data-index="' + i + '" draggable="true">' +
     '<span class="ai-drag">⠿</span>' +
-    '<span class="ai-icon" style="background:' + catBg(cat?.name || '') + '">' + renderIconHtml(cd.icon || 'link') + '</span>' +
+    '<span class="ai-icon" style="background:' + catBg(cat?.name || '') + '">' + (cd.icon || '🔗') + '</span>' +
     '<span class="ai-title">' + escHtml(cd.title) + '</span>' +
     (cd.isNew ? '<span class="ai-badge new">Nuevo</span>' : '') +
     (cd.isUpdated ? '<span class="ai-badge updated">Act.</span>' : '') +
     '<div class="ai-actions"><button class="ai-edit" data-id="' + escHtml(cd.id) + '" title="Editar">✏️</button><button class="ai-del" data-id="' + escHtml(cd.id) + '" title="Eliminar">🗑️</button></div></div>';
   }).join('');
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   setupDrag('apCardList', async ids => { if (!canWriteToFirebase()) return; for (let i = 0; i < ids.length; i++) { await db.collection('cards').doc(ids[i]).update({ order: i }); } fbCards.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)); });
   document.querySelectorAll('#apCardList .ai-edit').forEach(b => b.addEventListener('click', () => openCardModal(b.dataset.id)));
   document.querySelectorAll('#apCardList .ai-del').forEach(b => b.addEventListener('click', () => delCard(b.dataset.id)));
@@ -1243,8 +1223,7 @@ function openCardModal(id) {
     '<label>Título <input type="text" id="apmCardTitle" value="' + (cd ? escHtml(cd.title) : '') + '" placeholder="Ej: PowerSchool Teachers"></label>' +
     '<label>Descripción <textarea id="apmCardDesc">' + (cd ? escHtml(cd.description) : '') + '</textarea></label>' +
     '<label>URL <input type="url" id="apmCardUrl" value="' + (cd ? escHtml(cd.url) : '') + '" placeholder="https://..."></label>' +
-    '<div class="ap-row"><label>Categoría <select id="apmCardCat">' + catOpts + '</select></label><label>Icono <input type="text" id="apmCardIcon" value="' + (cd ? escHtml(cd.icon) : 'link') + '"></label></div>' +
-    '<label>Icono <div class="ap-lucide-grid">' + lucideGridHtml(cd ? cd.icon : 'link') + '</div></label>' +
+    '<div class="ap-row"><label>Categoría <select id="apmCardCat">' + catOpts + '</select></label><label>Icono <input type="text" id="apmCardIcon" value="' + (cd ? escHtml(cd.icon) : '🔗') + '"></label></div>' +
     '<div class="ap-row"><label class="ap-toggle"><input type="checkbox" id="apmCardNew"' + (cd?.isNew ? ' checked' : '') + '> Nuevo</label><label class="ap-toggle"><input type="checkbox" id="apmCardUpdated"' + (cd?.isUpdated ? ' checked' : '') + '> Actualizado</label></div>' +
     '</div>',
     async () => {
@@ -1254,7 +1233,7 @@ function openCardModal(id) {
         description: document.getElementById('apmCardDesc').value.trim(),
         url: document.getElementById('apmCardUrl').value.trim(),
         categoryId: document.getElementById('apmCardCat').value,
-        icon: document.getElementById('apmCardIcon').value.trim() || 'link',
+        icon: document.getElementById('apmCardIcon').value.trim() || '🔗',
         isNew: document.getElementById('apmCardNew').checked,
         isUpdated: document.getElementById('apmCardUpdated').checked
       };
@@ -1294,14 +1273,13 @@ async function delCard(id) {
 function showModal(title, bodyHtml, onSave) {
   document.getElementById('apModalTitle').textContent = title;
   document.getElementById('apModalBody').innerHTML = bodyHtml;
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   document.getElementById('apModalOverlay').classList.add('open');
-  document.querySelectorAll('.ap-lucide-opt').forEach(el => {
+  document.querySelectorAll('.ap-emoji-opt').forEach(el => {
     el.addEventListener('click', () => {
-      document.querySelectorAll('.ap-lucide-opt').forEach(e => e.classList.remove('active'));
+      document.querySelectorAll('.ap-emoji-opt').forEach(e => e.classList.remove('active'));
       el.classList.add('active');
       const inp = document.getElementById('apmCatIcon') || document.getElementById('apmCardIcon');
-      if (inp) inp.value = el.dataset.icon;
+      if (inp) inp.value = el.textContent;
     });
   });
   document.getElementById('apModalSave').onclick = onSave;
@@ -1576,7 +1554,6 @@ function editCard(el) {
     '<label>Descripción <textarea id="apmCardDesc">' + escHtml(card.description) + '</textarea></label>' +
     '<label>URL <input type="url" id="apmCardUrl" value="' + escHtml(card.url) + '"></label>' +
     '<div class="ap-row"><label>Categoría <select id="apmCardCat">' + catOpts + '</select></label><label>Icono <input type="text" id="apmCardIcon" value="' + escHtml(card.icon) + '"></label></div>' +
-    '<label>Icono <div class="ap-lucide-grid">' + lucideGridHtml(card.icon) + '</div></label>' +
     '<div class="ap-row"><label class="ap-toggle"><input type="checkbox" id="apmCardNew"' + (card.isNew ? ' checked' : '') + '> Nuevo</label><label class="ap-toggle"><input type="checkbox" id="apmCardUpdated"' + (card.isUpdated ? ' checked' : '') + '> Actualizado</label></div>' +
     '</div>',
     async () => {
@@ -1585,7 +1562,7 @@ function editCard(el) {
       card.url = document.getElementById('apmCardUrl').value.trim();
       const oldCategoryId = card.categoryId;
       card.categoryId = document.getElementById('apmCardCat').value;
-      card.icon = document.getElementById('apmCardIcon').value.trim() || 'link';
+      card.icon = document.getElementById('apmCardIcon').value.trim() || '🔗';
       card.isNew = document.getElementById('apmCardNew').checked;
       card.isUpdated = document.getElementById('apmCardUpdated').checked;
       if (!card.title || !card.url) return;
@@ -1615,7 +1592,7 @@ function addCardToSection(sectionSlug) {
   const form = document.createElement('div');
   form.className = 'inline-card-form';
   form.innerHTML =
-    '<label>Icono <div class="icf-icons">' + LUCIDE_ICONS.map((n, i) => '<button type="button" class="icf-icon' + (i === 0 ? ' active' : '') + '" data-icon="' + n + '"><i data-lucide="' + n + '"></i></button>').join('') + '</div><input type="text" class="icf-icon-input" value="' + LUCIDE_ICONS[0] + '"></label>' +
+    '<label>Icono <div class="icf-icons">' + EMOJIS.map((e, i) => '<button type="button" class="icf-icon' + (i === 0 ? ' active' : '') + '" data-icon="' + e + '">' + e + '</button>').join('') + '</div><input type="text" class="icf-icon-input" value="' + escHtml(EMOJIS[0]) + '"></label>' +
     '<div class="icf-grid">' +
     '<label>Nombre <input type="text" class="icf-title" placeholder="Ej: Child Protection Reporting"></label>' +
     '<label>Link <input type="url" class="icf-url" placeholder="https://..."></label>' +
@@ -1626,7 +1603,6 @@ function addCardToSection(sectionSlug) {
     '<label><span><input type="checkbox" class="icf-updated"> Actualizado</span></label>' +
     '</div>' +
     '<div class="icf-actions"><button type="button" class="icf-cancel">Cancelar</button><button type="button" class="icf-save">Guardar enlace</button></div>';
-  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   section.querySelector('.sec-add-btn')?.before(form);
   form.querySelector('.icf-title').focus();
   form.querySelectorAll('.icf-icon').forEach(btn => {
@@ -1643,7 +1619,7 @@ function addCardToSection(sectionSlug) {
       description: form.querySelector('.icf-desc').value.trim(),
       url: form.querySelector('.icf-url').value.trim(),
       categoryId: cat.id,
-      icon: form.querySelector('.icf-icon-input').value.trim() || 'link',
+      icon: form.querySelector('.icf-icon-input').value.trim() || '🔗',
       isNew: form.querySelector('.icf-new').checked,
       isUpdated: form.querySelector('.icf-updated').checked,
       order: fbCards.filter(c => c.categoryId === cat.id).length,
@@ -1663,7 +1639,7 @@ function addSection() {
   showModal('Nueva sección',
     '<div class="ap-form">' +
     '<label>Nombre <input type="text" id="apmCatName" placeholder="Ej: Recursos"></label>' +
-    '<label>Icono <div class="ap-lucide-grid">' + lucideGridHtml('folder') + '</div><input type="text" id="apmCatIcon" value="folder"></label>' +
+    '<label>Icono <div class="ap-emoji-grid">' + EMOJIS.map(e => '<div class="ap-emoji-opt">' + e + '</div>').join('') + '</div><input type="text" id="apmCatIcon" value="📁"></label>' +
     '</div>',
     async () => {
       if (!requireAdminAccess()) return;
@@ -1868,14 +1844,6 @@ editBtnEl?.addEventListener('click', function(e) {
 
 editBtnEl?.addEventListener('click', toggleEditMode);
 updateAdminControls();
-setInterval(() => {
-  const currentUser = auth?.currentUser || fbUser;
-  if (!isAuthorizedAdmin(currentUser)) {
-    fbUser = null;
-    updateAdminControls(null);
-    disableEditMode();
-  }
-}, 1000);
 
 // Modify renderFB to reapply edit UI
 const _origRenderFB = renderFB;
