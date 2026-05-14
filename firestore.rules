@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email is string;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (
+          request.auth.token.email.matches('^.+@cms\\.edu\\.do$')
+          || request.auth.token.email == 'erojas@cms.edu.do'
+        );
+    }
+
+    function isShortString(value, max) {
+      return value is string && value.size() > 0 && value.size() <= max;
+    }
+
+    function validConfig() {
+      return request.resource.data.keys().hasOnly([
+        'heroBg', 'heroBgPosition', 'heroBgSize', 'primaryColor', 'mascot',
+        'title', 'announcement', 'heroTitleColor', 'heroAccentColor',
+        'heroSubtitleColor', 'heroSearchTextColor'
+      ])
+      && (!('title' in request.resource.data) || isShortString(request.resource.data.title, 80))
+      && (!('announcement' in request.resource.data) || request.resource.data.announcement is string && request.resource.data.announcement.size() <= 400)
+      && (!('primaryColor' in request.resource.data) || request.resource.data.primaryColor.matches('^#[0-9a-fA-F]{6}$'));
+    }
+
+    function validCategory() {
+      return request.resource.data.keys().hasOnly(['name', 'icon', 'order', 'enabled'])
+        && isShortString(request.resource.data.name, 60)
+        && (!('icon' in request.resource.data) || request.resource.data.icon is string && request.resource.data.icon.size() <= 8)
+        && request.resource.data.order is number
+        && (!('enabled' in request.resource.data) || request.resource.data.enabled is bool);
+    }
+
+    function validCard() {
+      return request.resource.data.keys().hasOnly([
+        'title', 'description', 'url', 'categoryId', 'icon', 'order',
+        'enabled', 'isNew', 'isUpdated'
+      ])
+      && isShortString(request.resource.data.title, 90)
+      && request.resource.data.description is string
+      && request.resource.data.description.size() <= 250
+      && request.resource.data.url is string
+      && request.resource.data.url.matches('^(https?://|mailto:).+')
+      && isShortString(request.resource.data.categoryId, 80)
+      && (!('icon' in request.resource.data) || request.resource.data.icon is string && request.resource.data.icon.size() <= 8)
+      && request.resource.data.order is number
+      && (!('enabled' in request.resource.data) || request.resource.data.enabled is bool)
+      && (!('isNew' in request.resource.data) || request.resource.data.isNew is bool)
+      && (!('isUpdated' in request.resource.data) || request.resource.data.isUpdated is bool);
+    }
+
+    match /config/{docId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && docId == 'site' && validConfig();
+      allow delete: if false;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validCategory();
+      allow delete: if isAdmin();
+    }
+
+    match /cards/{cardId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validCard();
+      allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
