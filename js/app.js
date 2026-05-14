@@ -589,6 +589,76 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ===== LUCIDE ICONS =====
+const PRESET_COLORS = ['#b00', '#c00', '#800', '#e44', '#333', '#1a56db', '#059669', '#d97706'];
+const PRESET_GRADIENTS = ['linear-gradient(135deg, #b00 0%, #d00 50%, #b00 100%)', 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'];
+const LUCIDE_ICONS = [
+  'building', 'file-text', 'link', 'folder', 'book', 'book-open',
+  'graduation-cap', 'school', 'users', 'settings', 'tool', 'wrench',
+  'calendar', 'clock', 'bell', 'shield', 'heart', 'activity',
+  'bar-chart', 'pie-chart', 'globe', 'mail', 'message-circle', 'phone',
+  'camera', 'video', 'music', 'star', 'award', 'target', 'zap',
+  'search', 'home', 'grid', 'list', 'check-circle', 'alert-circle',
+  'info', 'help-circle', 'external-link', 'download', 'upload',
+  'printer', 'monitor'
+];
+
+const EMOJI_TO_LUCIDE = {
+  '🏫': 'building', '📋': 'clipboard', '📚': 'book', '📖': 'book-open',
+  '📊': 'bar-chart', '📅': 'calendar', '📆': 'calendar', '🗓': 'calendar',
+  '⚙️': 'settings', '🔧': 'wrench', '📁': 'folder', '📂': 'folder-open',
+  '🗂️': 'folder', '📝': 'file-text', '✏️': 'pen', '✏': 'pen',
+  '📢': 'megaphone', '🔔': 'bell', '🏥': 'building', '👥': 'users',
+  '🎒': 'backpack', '🏛️': 'building', '📈': 'trending-up', '📞': 'phone',
+  '🖥️': 'monitor', '💻': 'laptop', '📱': 'smartphone', '🌐': 'globe',
+  '💡': 'lightbulb', '⭐': 'star', '🎯': 'target', '🏆': 'award',
+  '🚀': 'rocket', '🎓': 'graduation-cap', '🎨': 'palette', '🔗': 'link',
+  '🎫': 'ticket', '📜': 'scroll', '📘': 'book', '🎧': 'headphones',
+  '🎙️': 'mic', '📷': 'camera', '👍': 'thumbs-up', '🖼️': 'image',
+  '📑': 'bookmark', '⚠️': 'alert-triangle', '⚠': 'alert-triangle',
+  '🗺️': 'map', '🏠': 'home', '⏰': 'clock', '⏱️': 'clock',
+  '✈️': 'plane', '🎉': 'party-popper', '💪': 'activity', '🚗': 'car',
+  '🏦': 'building', '🌍': 'globe', '💰': 'wallet', '✉️': 'mail',
+  '📬': 'mail', '📸': 'camera', '👀': 'eye', '💬': 'message-circle',
+  '📄': 'file', '❓': 'help-circle', '❔': 'help-circle', '🏖️': 'umbrella',
+  '🔄': 'refresh-cw', '🖨️': 'printer', '🏷️': 'tag', '🚨': 'alert-triangle',
+  '📽️': 'video', '📰': 'newspaper', '🎁': 'gift', '✅': 'check-circle',
+  '❌': 'x-circle', '🔍': 'search', '🛡️': 'shield', '🛡': 'shield',
+  '🔥': 'flame', '🏋️': 'dumbbell', '📇': 'contact', '📏': 'ruler',
+  '🗳': 'vote', '🎞️': 'film', '🔩': 'settings', '🔢': 'hash',
+  '🤱': 'users', '🐾': 'activity', '🦷': 'activity', '🏀': 'circle',
+  '👨‍🏫': 'users', '👩‍🏫': 'users', '🎃': 'circle', '🎙': 'mic',
+  '💉': 'activity', '📺': 'monitor', '🎚': 'sliders', '🏈': 'circle',
+  '🎽': 'activity', '🏅': 'award', '📌': 'map-pin', '🔖': 'bookmark',
+  '🆕': 'sparkles', '🔄': 'refresh-cw', '🌎': 'globe', '🌏': 'globe',
+  '📒': 'book', '📕': 'book', '📗': 'book', '📙': 'book',
+  '📃': 'file-text', '📋': 'clipboard', '📉': 'trending-down',
+  '🔐': 'lock', '🔒': 'lock', '🔓': 'unlock', '🖋': 'pen',
+  '🖊': 'pen', '🖍': 'pen', '✂️': 'scissors', '🔗': 'link',
+  '🦈': 'zap', '🎮': 'gamepad', '👤': 'user', '👤': 'user',
+};
+
+function emojiToLucide(e) {
+  return EMOJI_TO_LUCIDE[e] || EMOJI_TO_LUCIDE[e.replace(/\uFE0F/g, '')];
+}
+
+function isLucideIcon(val) {
+  return val && (LUCIDE_ICONS.includes(val) || emojiToLucide(val));
+}
+
+function renderIconHtml(icon) {
+  if (!icon) return '';
+  if (LUCIDE_ICONS.includes(icon)) return '<i data-lucide="' + icon + '"></i>';
+  const mapped = emojiToLucide(icon);
+  if (mapped) return '<i data-lucide="' + mapped + '"></i>';
+  return icon;
+}
+
+function lucideGridHtml(selected) {
+  const sel = emojiToLucide(selected) || selected;
+  return LUCIDE_ICONS.map(n => '<div class="ap-lucide-opt' + (n === sel ? ' active' : '') + '" data-icon="' + n + '"><i data-lucide="' + n + '"></i></div>').join('');
+}
+
 // ===== INIT =====
 initCompact();
 renderMostUsed();
@@ -1073,75 +1143,6 @@ document.addEventListener('click', e => {
 });
 
 // Config form
-const PRESET_COLORS = ['#b00', '#c00', '#800', '#e44', '#333', '#1a56db', '#059669', '#d97706'];
-const PRESET_GRADIENTS = ['linear-gradient(135deg, #b00 0%, #d00 50%, #b00 100%)', 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'];
-const LUCIDE_ICONS = [
-  'building', 'file-text', 'link', 'folder', 'book', 'book-open',
-  'graduation-cap', 'school', 'users', 'settings', 'tool', 'wrench',
-  'calendar', 'clock', 'bell', 'shield', 'heart', 'activity',
-  'bar-chart', 'pie-chart', 'globe', 'mail', 'message-circle', 'phone',
-  'camera', 'video', 'music', 'star', 'award', 'target', 'zap',
-  'search', 'home', 'grid', 'list', 'check-circle', 'alert-circle',
-  'info', 'help-circle', 'external-link', 'download', 'upload',
-  'printer', 'monitor'
-];
-
-const EMOJI_TO_LUCIDE = {
-  '🏫': 'building', '📋': 'clipboard', '📚': 'book', '📖': 'book-open',
-  '📊': 'bar-chart', '📅': 'calendar', '📆': 'calendar', '🗓': 'calendar',
-  '⚙️': 'settings', '🔧': 'wrench', '📁': 'folder', '📂': 'folder-open',
-  '🗂️': 'folder', '📝': 'file-text', '✏️': 'pen', '✏': 'pen',
-  '📢': 'megaphone', '🔔': 'bell', '🏥': 'building', '👥': 'users',
-  '🎒': 'backpack', '🏛️': 'building', '📈': 'trending-up', '📞': 'phone',
-  '🖥️': 'monitor', '💻': 'laptop', '📱': 'smartphone', '🌐': 'globe',
-  '💡': 'lightbulb', '⭐': 'star', '🎯': 'target', '🏆': 'award',
-  '🚀': 'rocket', '🎓': 'graduation-cap', '🎨': 'palette', '🔗': 'link',
-  '🎫': 'ticket', '📜': 'scroll', '📘': 'book', '🎧': 'headphones',
-  '🎙️': 'mic', '📷': 'camera', '👍': 'thumbs-up', '🖼️': 'image',
-  '📑': 'bookmark', '⚠️': 'alert-triangle', '⚠': 'alert-triangle',
-  '🗺️': 'map', '🏠': 'home', '⏰': 'clock', '⏱️': 'clock',
-  '✈️': 'plane', '🎉': 'party-popper', '💪': 'activity', '🚗': 'car',
-  '🏦': 'building', '🌍': 'globe', '💰': 'wallet', '✉️': 'mail',
-  '📬': 'mail', '📸': 'camera', '👀': 'eye', '💬': 'message-circle',
-  '📄': 'file', '❓': 'help-circle', '❔': 'help-circle', '🏖️': 'umbrella',
-  '🔄': 'refresh-cw', '🖨️': 'printer', '🏷️': 'tag', '🚨': 'alert-triangle',
-  '📽️': 'video', '📰': 'newspaper', '🎁': 'gift', '✅': 'check-circle',
-  '❌': 'x-circle', '🔍': 'search', '🛡️': 'shield', '🛡': 'shield',
-  '🔥': 'flame', '🏋️': 'dumbbell', '📇': 'contact', '📏': 'ruler',
-  '🗳': 'vote', '🎞️': 'film', '🔩': 'settings', '🔢': 'hash',
-  '🤱': 'users', '🐾': 'activity', '🦷': 'activity', '🏀': 'circle',
-  '👨‍🏫': 'users', '👩‍🏫': 'users', '🎃': 'circle', '🎙': 'mic',
-  '💉': 'activity', '📺': 'monitor', '🎚': 'sliders', '🏈': 'circle',
-  '🎽': 'activity', '🏅': 'award', '📌': 'map-pin', '🔖': 'bookmark',
-  '🆕': 'sparkles', '🔄': 'refresh-cw', '🌎': 'globe', '🌏': 'globe',
-  '📒': 'book', '📕': 'book', '📗': 'book', '📙': 'book',
-  '📃': 'file-text', '📋': 'clipboard', '📉': 'trending-down',
-  '🔐': 'lock', '🔒': 'lock', '🔓': 'unlock', '🖋': 'pen',
-  '🖊': 'pen', '🖍': 'pen', '✂️': 'scissors', '🔗': 'link',
-  '🦈': 'zap', '🎮': 'gamepad', '👤': 'user', '👤': 'user',
-};
-
-function emojiToLucide(e) {
-  return EMOJI_TO_LUCIDE[e] || EMOJI_TO_LUCIDE[e.replace(/\uFE0F/g, '')];
-}
-
-function isLucideIcon(val) {
-  return val && (LUCIDE_ICONS.includes(val) || emojiToLucide(val));
-}
-
-function renderIconHtml(icon) {
-  if (!icon) return '';
-  if (LUCIDE_ICONS.includes(icon)) return '<i data-lucide="' + icon + '"></i>';
-  const mapped = emojiToLucide(icon);
-  if (mapped) return '<i data-lucide="' + mapped + '"></i>';
-  return icon;
-}
-
-function lucideGridHtml(selected) {
-  const sel = emojiToLucide(selected) || selected;
-  return LUCIDE_ICONS.map(n => '<div class="ap-lucide-opt' + (n === sel ? ' active' : '') + '" data-icon="' + n + '"><i data-lucide="' + n + '"></i></div>').join('');
-}
-
 function fillConfigForm() {
   if (fbSite.heroBg) document.getElementById('apHeroBg').value = fbSite.heroBg;
   if (fbSite.primaryColor) { document.getElementById('apPrimaryColor').value = fbSite.primaryColor; document.querySelectorAll('.ap-color-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === fbSite.primaryColor)); }
