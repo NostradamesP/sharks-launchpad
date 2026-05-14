@@ -635,9 +635,15 @@ function clearProtectedContent(clearState = true) {
 function updatePortalAccess(user = portalUser, status) {
   const allowed = isSchoolUser(user);
   const gateStatus = document.getElementById('portalGateStatus');
+  const userMenu = document.getElementById('userMenu');
+  const userMenuName = document.getElementById('userMenuName');
+  const userMenuEmail = document.getElementById('userMenuEmail');
   document.body.classList.toggle('portal-locked', !allowed);
   document.body.classList.toggle('portal-checking', false);
   document.body.classList.toggle('portal-authenticated', allowed);
+  if (userMenu) userMenu.classList.remove('open');
+  if (userMenuName) userMenuName.textContent = allowed ? (user.displayName || user.email.split('@')[0]) : '';
+  if (userMenuEmail) userMenuEmail.textContent = allowed ? user.email : '';
   if (!allowed) clearProtectedContent();
   if (gateStatus) {
     gateStatus.textContent = status || (allowed ? 'Acceso autorizado.' : 'Inicia sesión con tu correo @cms.edu.do.');
@@ -1093,7 +1099,16 @@ function initAdminEvents() {
   on('apClose', 'click', () => { $('adminOverlay').classList.remove('open'); });
   on('apLogout', 'click', logoutGoogle);
   on('portalLoginBtn', 'click', loginGoogle);
+  on('userLogoutBtn', 'click', logoutGoogle);
+  on('userMenuBtn', 'click', e => {
+    e.stopPropagation();
+    $('userMenu')?.classList.toggle('open');
+  });
 }
+document.addEventListener('click', e => {
+  const menu = document.getElementById('userMenu');
+  if (menu && !menu.contains(e.target)) menu.classList.remove('open');
+});
 document.addEventListener('click', e => {
   const tab = e.target.closest('.ap-tab');
   if (tab) {

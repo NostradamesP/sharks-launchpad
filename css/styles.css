@@ -173,6 +173,73 @@ nav .logo span { color: var(--text-secondary); font-weight: 400; }
 }
 .nav-actions button:hover { border-color: var(--primary); color: var(--primary); }
 .nav-actions button.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+.user-menu {
+  position: relative;
+  display: none;
+}
+body.portal-authenticated .user-menu {
+  display: block;
+}
+.user-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(250px, calc(100vw - 24px));
+  padding: 12px;
+  background: rgba(255,255,255,0.98);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: 0 14px 40px var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: all 0.2s ease;
+  z-index: 140;
+}
+.user-menu.open .user-menu-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.ump-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.ump-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  margin-bottom: 2px;
+}
+.ump-email {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #777;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  margin-bottom: 10px;
+}
+.user-menu-panel #userLogoutBtn {
+  width: 100%;
+  height: auto;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.user-menu-panel #userLogoutBtn:hover {
+  color: #fff;
+  opacity: 0.92;
+}
 
 /* PORTAL ACCESS GATE */
 body.portal-locked {
@@ -677,6 +744,7 @@ footer .footer-links a:hover { color: #fff; }
   nav .logo { font-size: 0.95rem; max-width: 38vw; overflow: hidden; white-space: nowrap; }
   .nav-actions { gap: 4px; margin-left: auto; }
   .nav-actions button { width: 36px; height: 36px; font-size: 1rem; }
+  .user-menu-panel { right: -46px; }
   .category-filters { margin: 18px 0 4px; }
   .category-filters {
     overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start;
@@ -740,6 +808,7 @@ footer .footer-links a:hover { color: #fff; }
   nav { height: 52px; padding: 0 10px; top: 24px; gap: 6px; }
   .nav-actions button { width: 34px; height: 34px; font-size: 0.95rem; border-radius: 8px; }
   #historyBtn, #exportFavsBtn, #compactBtn { display: none; }
+  .user-menu-panel { right: -40px; width: min(230px, calc(100vw - 18px)); }
   .nav-actions { gap: 4px; }
   nav .logo { font-size: 0.82rem; gap: 7px; max-width: 36vw; }
   nav .logo span { display: none; }
