@@ -1073,8 +1073,8 @@ function bootstrapStateFromDom() {
 }
 
 function renderFB() {
-  const mc = document.querySelector('.main-content');
-  if (!mc) return;
+  const container = document.getElementById('sectionsContainer');
+  if (!container) return;
   let o = '';
   [...fbCats].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(cat => {
     if (cat.enabled === false) return;
@@ -1095,7 +1095,7 @@ function renderFB() {
     o += '</div></section>';
   });
   o += '<div class="no-results" id="noResults"><div class="nr-icon">🔍</div><h3>Sin resultados</h3><p>No encontramos nada para "<span id="searchTerm"></span>". Intenta con otro término.</p></div>';
-  mc.innerHTML = o;
+  container.innerHTML = o;
   if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   reinitFeats();
 }
