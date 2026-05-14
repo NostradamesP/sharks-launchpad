@@ -286,7 +286,8 @@ allCards.forEach(card => {
     const icon = ci?.dataset.icon || ci?.textContent || 'link';
     tpTitle.textContent = title;
     tpDesc.textContent = desc;
-    tpScreenshot.textContent = icon;
+    tpScreenshot.innerHTML = renderIconHtml(icon);
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     tooltipTimeout = setTimeout(() => {
       tooltip.classList.add('visible');
       positionTooltip(card);
@@ -1035,7 +1036,7 @@ function reinitFeats() {
   updateStarBadge();
   allCards.forEach(card => {
     card.addEventListener('click', () => { trackHistory(card); const u = card.getAttribute('href'); trackClick(u); trackVisit(u); });
-    card.addEventListener('mouseenter', e => { clearTimeout(tooltipTimeout); tpTitle.textContent = card.querySelector('h3')?.textContent || ''; tpDesc.textContent = card.querySelector('p')?.textContent || ''; const ci = card.querySelector('.card-icon'); tpScreenshot.textContent = ci?.dataset.icon || ci?.textContent || 'monitor'; tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400); });
+    card.addEventListener('mouseenter', e => { clearTimeout(tooltipTimeout); tpTitle.textContent = card.querySelector('h3')?.textContent || ''; tpDesc.textContent = card.querySelector('p')?.textContent || ''; const ci = card.querySelector('.card-icon'); const ic = ci?.dataset.icon || ci?.textContent || 'link'; tpScreenshot.innerHTML = renderIconHtml(ic); if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400); });
     card.addEventListener('mouseleave', () => { clearTimeout(tooltipTimeout); tooltip.classList.remove('visible'); });
   });
   allCards.forEach(card => { card.style.animationPlayState = 'paused'; observer.observe(card); });
@@ -1084,17 +1085,60 @@ const LUCIDE_ICONS = [
   'printer', 'monitor'
 ];
 
+const EMOJI_TO_LUCIDE = {
+  '🏫': 'building', '📋': 'clipboard', '📚': 'book', '📖': 'book-open',
+  '📊': 'bar-chart', '📅': 'calendar', '📆': 'calendar', '🗓': 'calendar',
+  '⚙️': 'settings', '🔧': 'wrench', '📁': 'folder', '📂': 'folder-open',
+  '🗂️': 'folder', '📝': 'file-text', '✏️': 'pen', '✏': 'pen',
+  '📢': 'megaphone', '🔔': 'bell', '🏥': 'building', '👥': 'users',
+  '🎒': 'backpack', '🏛️': 'building', '📈': 'trending-up', '📞': 'phone',
+  '🖥️': 'monitor', '💻': 'laptop', '📱': 'smartphone', '🌐': 'globe',
+  '💡': 'lightbulb', '⭐': 'star', '🎯': 'target', '🏆': 'award',
+  '🚀': 'rocket', '🎓': 'graduation-cap', '🎨': 'palette', '🔗': 'link',
+  '🎫': 'ticket', '📜': 'scroll', '📘': 'book', '🎧': 'headphones',
+  '🎙️': 'mic', '📷': 'camera', '👍': 'thumbs-up', '🖼️': 'image',
+  '📑': 'bookmark', '⚠️': 'alert-triangle', '⚠': 'alert-triangle',
+  '🗺️': 'map', '🏠': 'home', '⏰': 'clock', '⏱️': 'clock',
+  '✈️': 'plane', '🎉': 'party-popper', '💪': 'activity', '🚗': 'car',
+  '🏦': 'building', '🌍': 'globe', '💰': 'wallet', '✉️': 'mail',
+  '📬': 'mail', '📸': 'camera', '👀': 'eye', '💬': 'message-circle',
+  '📄': 'file', '❓': 'help-circle', '❔': 'help-circle', '🏖️': 'umbrella',
+  '🔄': 'refresh-cw', '🖨️': 'printer', '🏷️': 'tag', '🚨': 'alert-triangle',
+  '📽️': 'video', '📰': 'newspaper', '🎁': 'gift', '✅': 'check-circle',
+  '❌': 'x-circle', '🔍': 'search', '🛡️': 'shield', '🛡': 'shield',
+  '🔥': 'flame', '🏋️': 'dumbbell', '📇': 'contact', '📏': 'ruler',
+  '🗳': 'vote', '🎞️': 'film', '🔩': 'settings', '🔢': 'hash',
+  '🤱': 'users', '🐾': 'activity', '🦷': 'activity', '🏀': 'circle',
+  '👨‍🏫': 'users', '👩‍🏫': 'users', '🎃': 'circle', '🎙': 'mic',
+  '💉': 'activity', '📺': 'monitor', '🎚': 'sliders', '🏈': 'circle',
+  '🎽': 'activity', '🏅': 'award', '📌': 'map-pin', '🔖': 'bookmark',
+  '🆕': 'sparkles', '🔄': 'refresh-cw', '🌎': 'globe', '🌏': 'globe',
+  '📒': 'book', '📕': 'book', '📗': 'book', '📙': 'book',
+  '📃': 'file-text', '📋': 'clipboard', '📉': 'trending-down',
+  '🔐': 'lock', '🔒': 'lock', '🔓': 'unlock', '🖋': 'pen',
+  '🖊': 'pen', '🖍': 'pen', '✂️': 'scissors', '🔗': 'link',
+  '🦈': 'zap', '🎮': 'gamepad', '👤': 'user', '👤': 'user',
+};
+
+function emojiToLucide(e) {
+  return EMOJI_TO_LUCIDE[e] || EMOJI_TO_LUCIDE[e.replace(/\uFE0F/g, '')];
+}
+
 function isLucideIcon(val) {
-  return val && LUCIDE_ICONS.includes(val);
+  return val && (LUCIDE_ICONS.includes(val) || emojiToLucide(val));
 }
 
 function renderIconHtml(icon) {
-  if (isLucideIcon(icon)) return '<i data-lucide="' + icon + '"></i>';
-  return icon || '';
+  if (!icon) return '';
+  if (LUCIDE_ICONS.includes(icon)) return '<i data-lucide="' + icon + '"></i>';
+  const mapped = emojiToLucide(icon);
+  if (mapped) return '<i data-lucide="' + mapped + '"></i>';
+  return icon;
 }
 
 function lucideGridHtml(selected) {
-  return LUCIDE_ICONS.map(n => '<div class="ap-lucide-opt' + (n === selected ? ' active' : '') + '" data-icon="' + n + '"><i data-lucide="' + n + '"></i></div>').join('');
+  const sel = emojiToLucide(selected) || selected;
+  return LUCIDE_ICONS.map(n => '<div class="ap-lucide-opt' + (n === sel ? ' active' : '') + '" data-icon="' + n + '"><i data-lucide="' + n + '"></i></div>').join('');
 }
 
 function fillConfigForm() {
