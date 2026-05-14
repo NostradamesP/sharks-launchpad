@@ -698,6 +698,7 @@ function initFB() {
         document.getElementById('apLogout')?.classList.remove('visible');
         document.getElementById('adminOverlay')?.classList.remove('open');
         pendingLogin = false;
+        loadFB({ seedIfEmpty: false }).catch(() => {});
         if (user) {
           showToast('Ese correo no tiene permisos de administrador.', 'error');
           auth.signOut();
