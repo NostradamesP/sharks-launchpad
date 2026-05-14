@@ -23,7 +23,7 @@ body {
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 @keyframes fadeUp {
@@ -207,9 +207,9 @@ nav .logo span { color: var(--text-secondary); font-weight: 400; }
   background: var(--bg);
   border-radius: 15px 15px 0 0;
 }
-.hero .hero-mascot { display: none; }
+.hero .hero-mascot { display: block; }
 .hero h1 {
-  display: none;
+  display: block;
   font-size: clamp(1.8rem, 5vw, 3rem);
   font-weight: 800;
   line-height: 1.1;
@@ -328,7 +328,7 @@ nav .logo span { color: var(--text-secondary); font-weight: 400; }
 }
 
 /* MAIN */
-.main-content { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.main-content { max-width: 1200px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
 
 /* SECTIONS */
 .section {
@@ -819,7 +819,7 @@ footer .footer-links a:hover { color: #fff; }
   font-size: 0.68rem; color: #aaa; flex-shrink: 0;
 }
 @media (max-width: 480px) {
-  .search-suggestions { left: -14px; right: -14px; border-radius: 0 0 10px 10px; }
+  .search-suggestions { left: 0; right: 0; border-radius: 0 0 10px 10px; }
 }
 
 .search-suggestions .ss-empty {

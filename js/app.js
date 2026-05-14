@@ -747,8 +747,6 @@ function initFB() {
     db.settings({ merge: true });
     fbReady = true;
     console.log("Firebase initialized");
-    loadFB({ seedIfEmpty: false }).catch(e => console.warn('Public Firebase load skipped:', e.message));
-    // Handle redirect result (popup blocked fallback)
     auth.getRedirectResult().catch(e => console.error('getRedirectResult:', e));
     auth.onAuthStateChanged(user => {
       const allowed = isAuthorizedAdmin(user);
@@ -1033,7 +1031,17 @@ function catBg(name) {
 }
 
 function catSlug(name) {
-  return (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const slug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const SHORT = {
+    'formspoliciesprocedures': 'forms',
+    'communications': 'comms',
+    'elementaryschool': 'elementary',
+    'middleschool': 'middle',
+    'highschool': 'high',
+    'healthoffice': 'health',
+    'humanresources': 'hhrr',
+  };
+  return SHORT[slug] || slug;
 }
 
 function bootstrapStateFromDom() {
@@ -1108,6 +1116,7 @@ function reinitFeats() {
   allCards.forEach(card => {
     card.addEventListener('click', () => { trackHistory(card); const u = card.getAttribute('href'); trackClick(u); trackVisit(u); });
     card.addEventListener('mouseenter', e => { clearTimeout(tooltipTimeout); tpTitle.textContent = card.querySelector('h3')?.textContent || ''; tpDesc.textContent = card.querySelector('p')?.textContent || ''; const ci = card.querySelector('.card-icon'); const ic = ci?.dataset.icon || ci?.textContent || 'link'; tpScreenshot.innerHTML = renderIconHtml(ic); if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons(); tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400); });
+    card.addEventListener('mousemove', () => { if (tooltip.classList.contains('visible')) positionTooltip(card); });
     card.addEventListener('mouseleave', () => { clearTimeout(tooltipTimeout); tooltip.classList.remove('visible'); });
   });
   allCards.forEach(card => { card.style.animationPlayState = 'paused'; observer.observe(card); });
