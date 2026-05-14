@@ -855,7 +855,6 @@ function loginGoogle() {
   showToast('Abriendo ventana de Google...', 'info');
   pendingLogin = true;
   const p = new firebase.auth.GoogleAuthProvider();
-  p.setCustomParameters({ hd: 'cms.edu.do' });
   auth.signInWithPopup(p).catch(e => {
     console.error('signInWithPopup error:', e);
     hideLoading();
