@@ -926,14 +926,12 @@ function logoutGoogle() {
   fbUser = null;
   disableEditMode();
   updateAdminControls(null);
+  document.getElementById('apLogout')?.classList.remove('visible');
+  document.getElementById('apUserInfo').innerHTML = '';
   document.getElementById('adminOverlay')?.classList.remove('open');
-  if (!auth) return;
-  auth.signOut().then(() => {
-    fbUser = null;
-    disableEditMode();
-    updateAdminControls(null);
-    showToast('Sesión cerrada', 'success');
-  }).catch(e => showToast('Error al cerrar sesión: ' + e.message, 'error'));
+  if (!auth) { showToast('Sesión cerrada', 'success'); return; }
+  auth.signOut().then(() => showToast('Sesión cerrada', 'success'))
+    .catch(e => { console.error('signOut error:', e); showToast('Error al cerrar sesión: ' + e.message, 'error'); });
 }
 
 async function loadFB(options = {}) {
