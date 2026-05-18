@@ -934,8 +934,8 @@ footer .footer-links a:hover { color: #fff; }
 .most-used-section.visible { display: block; }
 .most-used-header {
   display: flex; align-items: center; gap: 8px;
-  font-size: 0.78rem; font-weight: 800; color: color-mix(in srgb, var(--primary) 76%, var(--text-secondary));
-  margin: 0 0 8px;
+  font-size: 0.72rem; font-weight: 800; color: color-mix(in srgb, var(--primary) 76%, var(--text-secondary));
+  margin: 0 0 6px;
 }
 .most-used-grid {
   display: flex; gap: 6px; flex-wrap: nowrap;
@@ -945,11 +945,11 @@ footer .footer-links a:hover { color: #fff; }
 .most-used-grid::-webkit-scrollbar { display: none; }
 .most-used-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 10px;
-  background: color-mix(in srgb, var(--primary) 6%, #fff);
-  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  padding: 6px 14px;
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
   border-radius: 100px;
-  font-size: 0.72rem; font-weight: 700; color: color-mix(in srgb, var(--primary) 72%, var(--text));
+  font-size: 0.76rem; font-weight: 700; color: color-mix(in srgb, var(--primary) 76%, var(--text));
   text-decoration: none; cursor: pointer;
   transition: all 0.2s;
   max-width: none; white-space: nowrap;
@@ -959,7 +959,7 @@ footer .footer-links a:hover { color: #fff; }
   border-color: #f5a3a3; color: #b00;
   box-shadow: 0 2px 8px rgba(187,0,0,0.06);
 }
-.most-used-chip .mu-icon { font-size: 0.85rem; flex-shrink: 0; }
+.most-used-chip .mu-icon { font-size: 0.78rem; flex-shrink: 0; }
 .most-used-chip .mu-count { font-size: 0.65rem; color: #bbb; margin-left: 2px; }
 
 /* COLLAPSIBLE */
