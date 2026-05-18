@@ -787,7 +787,7 @@ footer .footer-links a:hover { color: #fff; }
   .below-hero-tools { padding: 0 20px; }
   .hero-copy { margin-top: -34px; font-size: 0.92rem; max-width: 620px; }
   .launch-tools { flex-direction: column; gap: 10px; margin: 18px 0 4px; }
-  .search-wrap, .most-used-section { flex: 1 1 auto; width: 100%; max-width: 100%; }
+  .search-wrap, .most-used-section { flex: 1 1 auto; width: 100%; max-width: 100%; margin-right: 0; padding-right: 0; }
   .section { padding: 24px 0; }
   .section-header { margin: 8px 0 26px 50%; padding: 16px 20px; min-height: 56px; }
   .section-header h2 { font-size: 1rem; }
@@ -924,9 +924,12 @@ footer .footer-links a:hover { color: #fff; }
   padding: 0;
   display: none;
   animation: fadeIn 0.3s ease;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 0;
-  max-width: 560px;
+  max-width: none;
+  width: calc(100vw - 480px);
+  margin-right: calc(50% - 50vw);
+  padding-right: 32px;
 }
 .most-used-section.visible { display: block; }
 .most-used-header {
@@ -949,7 +952,7 @@ footer .footer-links a:hover { color: #fff; }
   font-size: 0.72rem; font-weight: 700; color: color-mix(in srgb, var(--primary) 72%, var(--text));
   text-decoration: none; cursor: pointer;
   transition: all 0.2s;
-  max-width: 190px; white-space: nowrap;
+  max-width: none; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
 .most-used-chip:hover {
