@@ -490,20 +490,20 @@ body.portal-locked .portal-gate { display: flex; }
 }
 .card.card-hidden { display: none; }
 .card .card-icon {
-  width: 60px; height: 60px;
-  min-width: 60px;
-  border-radius: 14px;
+  width: 82px; height: 82px;
+  min-width: 82px;
+  border-radius: 16px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem;
+  font-size: 2rem;
   transition: transform 0.2s;
   position: relative;
   overflow: hidden;
 }
 .card-icon img {
-  width: 100%; height: 100%; object-fit: cover;
+  width: 100%; height: 100%; object-fit: contain;
   display: block;
 }
-.card-icon--image { padding: 0; }
+.card-icon--image { padding: 6px; }
 .card:hover .card-icon { transform: scale(1.06); }
 .card .card-body { min-width: 0; flex: 1; }
 .card h3 {
@@ -790,7 +790,7 @@ footer .footer-links a:hover { color: #fff; }
   .section-header .sec-icon { width: 42px; height: 42px; font-size: 1.15rem; }
   .cards-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .card { padding: 14px 16px; gap: 14px; }
-  .card .card-icon { width: 50px; height: 50px; min-width: 50px; font-size: 1.3rem; }
+  .card .card-icon { width: 66px; height: 66px; min-width: 66px; font-size: 1.65rem; }
   .card h3 { font-size: 0.84rem; }
   .card p { font-size: 0.76rem; }
   .category-filters { gap: 5px; }
@@ -836,7 +836,7 @@ footer .footer-links a:hover { color: #fff; }
   .section-header .sec-count { font-size: 0.65rem; padding: 1px 7px; }
   .cards-grid { gap: 8px; }
   .card { padding: 13px 14px; gap: 12px; border-radius: 12px; align-items: center; }
-  .card .card-icon { width: 46px; height: 46px; min-width: 46px; font-size: 1.12rem; border-radius: 10px; }
+  .card .card-icon { width: 58px; height: 58px; min-width: 58px; font-size: 1.4rem; border-radius: 12px; }
   .card h3 { font-size: 0.8rem; line-height: 1.25; }
   .card p { font-size: 0.72rem; line-height: 1.3; }
   .card .card-arrow { display: none; }
@@ -865,7 +865,7 @@ footer .footer-links a:hover { color: #fff; }
   .search-wrap input { padding: 8px 10px 8px 32px; font-size: 0.78rem; }
   .section-header h2 { font-size: 0.82rem; }
   .card { padding: 8px 10px; gap: 8px; }
-  .card .card-icon { width: 38px; height: 38px; min-width: 38px; font-size: 1rem; }
+  .card .card-icon { width: 50px; height: 50px; min-width: 50px; font-size: 1.2rem; }
   .card h3 { font-size: 0.76rem; }
   .card p { font-size: 0.68rem; }
   .category-filters { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; -webkit-overflow-scrolling: touch; scrollbar-width: none; }

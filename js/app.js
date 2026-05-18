@@ -846,16 +846,36 @@ function resizeHeroImage(file, maxWidth = 1400, quality = 0.72) {
   });
 }
 
+function resizeCardImage(file, maxWidth = 180) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen.'));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadCardImage(file, cardId) {
-  const ref = storage.ref('cards/' + cardId + '/thumbnail.jpg');
-  await ref.put(file);
-  return await ref.getDownloadURL();
+  // Store compact card thumbnails directly with the card data. This avoids
+  // Firebase Storage rule/CORS failures blocking the whole save flow.
+  return await resizeCardImage(file);
 }
 
 async function deleteCardImage(cardId) {
-  try {
-    await storage.ref('cards/' + cardId + '/thumbnail.jpg').delete();
-  } catch(e) { /* may not exist */ }
+  return Promise.resolve();
 }
 
 function openHeroPhotoAdjust(draftCfg, previousCfg) {
