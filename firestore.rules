@@ -46,7 +46,7 @@ service cloud.firestore {
     function validCard() {
       return request.resource.data.keys().hasOnly([
         'title', 'description', 'url', 'categoryId', 'icon', 'order',
-        'enabled', 'isNew', 'isUpdated'
+        'enabled', 'isNew', 'isUpdated', 'imageUrl'
       ])
       && isShortString(request.resource.data.title, 90)
       && request.resource.data.description is string
@@ -58,7 +58,8 @@ service cloud.firestore {
       && request.resource.data.order is number
       && (!('enabled' in request.resource.data) || request.resource.data.enabled is bool)
       && (!('isNew' in request.resource.data) || request.resource.data.isNew is bool)
-      && (!('isUpdated' in request.resource.data) || request.resource.data.isUpdated is bool);
+      && (!('isUpdated' in request.resource.data) || request.resource.data.isUpdated is bool)
+      && (!('imageUrl' in request.resource.data) || request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 500000);
     }
 
     match /config/{docId} {
