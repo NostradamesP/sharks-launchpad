@@ -409,7 +409,12 @@ function renderMostUsed() {
     const card = Array.from(allCards).find(c => c.getAttribute('href') === url);
     if (!card) return '';
     const title = card.querySelector('h3')?.textContent || '';
-    const icon = card.querySelector('.card-icon')?.textContent || '🔗';
+    let icon = '🔗';
+    const ci = card.querySelector('.card-icon');
+    if (ci) {
+      const ciImg = ci.querySelector('img');
+      icon = ciImg ? '<img src="' + escHtml(ciImg.src) + '" alt="" style="width:18px;height:18px;object-fit:cover;border-radius:4px;">' : (ci.textContent || '🔗');
+    }
     return `<a href="${escHtml(url)}" target="_blank" class="most-used-chip"><span class="mu-icon">${icon}</span>${escHtml(title)}<span class="mu-count">${count}</span></a>`;
   }).join('');
 }
@@ -513,7 +518,12 @@ function renderFavsManager() {
   favsManagerList.innerHTML = favs.map((url, i) => {
     const card = Array.from(allCards).find(c => c.getAttribute('href') === url);
     const title = card?.querySelector('h3')?.textContent || 'Enlace';
-    const icon = card?.querySelector('.card-icon')?.textContent || '🔗';
+    const icon = (() => {
+      const ci = card?.querySelector('.card-icon');
+      if (!ci) return '🔗';
+      const img = ci.querySelector('img');
+      return img ? '<img src="' + escHtml(img.src) + '" alt="" style="width:24px;height:24px;object-fit:cover;border-radius:6px;">' : (ci.textContent || '🔗');
+    })();
     return `<div class="fm-item" data-url="${escHtml(url)}" data-index="${i}" draggable="true"><span class="fm-drag-handle">⠿</span><span class="fm-icon" style="background:var(--primary-light)">${icon}</span><span class="fm-title">${escHtml(title)}</span><button class="fm-remove" data-url="${escHtml(url)}">✕</button></div>`;
   }).join('');
   let dragSrc = null;
@@ -590,7 +600,7 @@ const firebaseConfig = {
   measurementId: "G-26MSY5BGGP"
 };
 
-let fbReady = false, db = null, auth = null, fbUser = null, portalUser = null;
+let fbReady = false, db = null, auth = null, storage = null, fbUser = null, portalUser = null;
 let fbCats = [], fbCards = [], fbSite = {};
 let pendingLogin = false;
 
@@ -700,6 +710,7 @@ function initFB() {
     auth = firebase.auth();
     db = firebase.firestore();
     db.settings({ merge: true });
+    storage = firebase.storage();
     fbReady = true;
     console.log("Firebase initialized");
     // Handle redirect result (popup blocked fallback)
@@ -833,6 +844,18 @@ function resizeHeroImage(file, maxWidth = 1400, quality = 0.72) {
     };
     reader.readAsDataURL(file);
   });
+}
+
+async function uploadCardImage(file, cardId) {
+  const ref = storage.ref('cards/' + cardId + '/thumbnail.jpg');
+  await ref.put(file);
+  return await ref.getDownloadURL();
+}
+
+async function deleteCardImage(cardId) {
+  try {
+    await storage.ref('cards/' + cardId + '/thumbnail.jpg').delete();
+  } catch(e) { /* may not exist */ }
 }
 
 function openHeroPhotoAdjust(draftCfg, previousCfg) {
@@ -1021,6 +1044,7 @@ function bootstrapStateFromDom() {
           description: el.querySelector('p')?.textContent || '',
           url: el.getAttribute('href') || '',
           icon: el.querySelector('.card-icon')?.textContent || '\u{1F517}',
+          imageUrl: '',
           categoryId: cat?.id || '',
           order: i,
           isNew: el.dataset.new === 'true',
@@ -1050,7 +1074,11 @@ function renderFB() {
     cc.forEach(cd => {
       const d = (Math.random() * 0.5).toFixed(2);
       o += '<a href="' + escHtml(cd.url) + '" target="_blank" class="card" draggable="false" data-card-id="' + escHtml(cd.id) + '" style="animation-delay:' + d + 's"' + (cd.isNew ? ' data-new="true"' : '') + (cd.isUpdated ? ' data-updated="true"' : '') + '>';
-      o += '<div class="card-icon" style="background:' + bg + '">' + (cd.icon || '\u{1F517}') + '</div>';
+      if (cd.imageUrl) {
+        o += '<div class="card-icon card-icon--image" style="background:' + bg + '"><img src="' + escHtml(cd.imageUrl) + '" alt="" loading="lazy"></div>';
+      } else {
+        o += '<div class="card-icon" style="background:' + bg + '">' + (cd.icon || '\u{1F517}') + '</div>';
+      }
       o += '<div class="card-body"><h3>' + escHtml(cd.title) + '</h3><p>' + escHtml(cd.description) + '</p></div>';
       o += '<span class="card-arrow">→</span></a>';
     });
@@ -1072,7 +1100,19 @@ function reinitFeats() {
   updateStarBadge();
   allCards.forEach(card => {
     card.addEventListener('click', () => { trackHistory(card); const u = card.getAttribute('href'); trackClick(u); trackVisit(u); });
-    card.addEventListener('mouseenter', e => { clearTimeout(tooltipTimeout); tpTitle.textContent = card.querySelector('h3')?.textContent || ''; tpDesc.textContent = card.querySelector('p')?.textContent || ''; tpScreenshot.textContent = card.querySelector('.card-icon')?.textContent || '🖥️'; tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400); });
+    card.addEventListener('mouseenter', e => {
+      clearTimeout(tooltipTimeout);
+      tpTitle.textContent = card.querySelector('h3')?.textContent || '';
+      tpDesc.textContent = card.querySelector('p')?.textContent || '';
+      const ci = card.querySelector('.card-icon');
+      const ciImg = ci?.querySelector('img');
+      if (ciImg) {
+        tpScreenshot.innerHTML = '<img src="' + escHtml(ciImg.src) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:7px;">';
+      } else {
+        tpScreenshot.textContent = ci?.textContent || '🖥️';
+      }
+      tooltipTimeout = setTimeout(() => { tooltip.classList.add('visible'); positionTooltip(card); }, 400);
+    });
     card.addEventListener('mouseleave', () => { clearTimeout(tooltipTimeout); tooltip.classList.remove('visible'); });
   });
   allCards.forEach(card => { card.style.animationPlayState = 'paused'; observer.observe(card); });
@@ -1208,7 +1248,7 @@ function renderAdminCards_(filterId) {
     const cat = fbCats.find(c => c.id === cd.categoryId);
     return '<div class="admin-item" data-id="' + escHtml(cd.id) + '" data-index="' + i + '" draggable="true">' +
     '<span class="ai-drag">⠿</span>' +
-    '<span class="ai-icon" style="background:' + catBg(cat?.name || '') + '">' + (cd.icon || '🔗') + '</span>' +
+    '<span class="ai-icon" style="background:' + catBg(cat?.name || '') + '">' + (cd.imageUrl ? '📷' : (cd.icon || '🔗')) + '</span>' +
     '<span class="ai-title">' + escHtml(cd.title) + '</span>' +
     (cd.isNew ? '<span class="ai-badge new">Nuevo</span>' : '') +
     (cd.isUpdated ? '<span class="ai-badge updated">Act.</span>' : '') +
@@ -1233,12 +1273,18 @@ function openCardModal(id) {
   if (!requireAdminAccess()) return;
   const cd = id ? fbCards.find(c => c.id === id) : null;
   const catOpts = fbCats.map(c => '<option value="' + escHtml(c.id) + '"' + (cd && cd.categoryId === c.id ? ' selected' : '') + '>' + escHtml(c.name) + '</option>').join('');
+  const imgPreview = cd?.imageUrl ? '<div class="apm-image-preview-wrap" id="apmImagePreviewWrap"><img src="' + escHtml(cd.imageUrl) + '" class="apm-image-preview"><button type="button" class="apm-image-remove" id="apmImageRemove">✕</button></div>' : '<div class="apm-image-preview-wrap" id="apmImagePreviewWrap" style="display:none"><img class="apm-image-preview" id="apmImagePreview"><button type="button" class="apm-image-remove" id="apmImageRemove">✕</button></div>';
   showModal(cd ? 'Editar enlace' : 'Nuevo enlace',
     '<div class="ap-form">' +
     '<label>Título <input type="text" id="apmCardTitle" value="' + (cd ? escHtml(cd.title) : '') + '" placeholder="Ej: PowerSchool Teachers"></label>' +
     '<label>Descripción <textarea id="apmCardDesc">' + (cd ? escHtml(cd.description) : '') + '</textarea></label>' +
     '<label>URL <input type="url" id="apmCardUrl" value="' + (cd ? escHtml(cd.url) : '') + '" placeholder="https://..."></label>' +
     '<div class="ap-row"><label>Categoría <select id="apmCardCat">' + catOpts + '</select></label><label>Icono <input type="text" id="apmCardIcon" value="' + (cd ? escHtml(cd.icon) : '🔗') + '"></label></div>' +
+    '<label>Imagen <div class="apm-image-upload">' +
+    '<input type="file" id="apmCardImage" accept="image/*" hidden>' +
+    '<button type="button" class="apm-image-btn" id="apmImageBtn">📷 Subir imagen</button>' +
+    imgPreview +
+    '<span class="ap-hint">La imagen reemplaza al icono emoji. 60×60px recomendado.</span></div></label>' +
     '<div class="ap-row"><label class="ap-toggle"><input type="checkbox" id="apmCardNew"' + (cd?.isNew ? ' checked' : '') + '> Nuevo</label><label class="ap-toggle"><input type="checkbox" id="apmCardUpdated"' + (cd?.isUpdated ? ' checked' : '') + '> Actualizado</label></div>' +
     '</div>',
     async () => {
@@ -1253,29 +1299,80 @@ function openCardModal(id) {
         isUpdated: document.getElementById('apmCardUpdated').checked
       };
       if (!d.title || !d.url) return;
+      const fileInput = document.getElementById('apmCardImage');
+      const removeChecked = document.getElementById('apmImagePreviewWrap').dataset.remove === 'true';
+      let targetId = cd ? cd.id : null;
+      if (fileInput?.files?.[0]) {
+        if (!targetId) {
+          const r = await db.collection('cards').add({ ...d, order: fbCards.filter(c => c.categoryId === d.categoryId).length, enabled: true, imageUrl: '' });
+          targetId = r.id;
+          fbCards.push({ id: r.id, ...d, imageUrl: '' });
+        }
+        const url = await uploadCardImage(fileInput.files[0], targetId);
+        d.imageUrl = url;
+      } else if (removeChecked) {
+        if (targetId) await deleteCardImage(targetId);
+        d.imageUrl = '';
+      }
       if (cd) {
         const oldCategoryId = cd.categoryId;
         if (oldCategoryId !== d.categoryId) d.order = fbCards.filter(c => c.categoryId === d.categoryId).length;
+        if (d.imageUrl === undefined) d.imageUrl = cd.imageUrl || '';
         await db.collection('cards').doc(cd.id).update(d);
         Object.assign(cd, d);
         if (oldCategoryId !== cd.categoryId) {
           normalizeCardOrders(oldCategoryId);
           await saveCardOrder(oldCategoryId);
         }
+      } else if (!targetId) {
+        d.order = fbCards.filter(c => c.categoryId === d.categoryId).length;
+        d.enabled = true;
+        d.imageUrl = '';
+        const r = await db.collection('cards').add(d);
+        fbCards.push({ id: r.id, ...d });
       }
-      else { d.order = fbCards.filter(c => c.categoryId === d.categoryId).length; d.enabled = true; const r = await db.collection('cards').add(d); fbCards.push({ id: r.id, ...d }); }
       renderAdminCards_(document.getElementById('apCardFilter').value);
       renderAdminCats();
       renderFB();
       closeModal();
     }
   );
+  // Wire up image upload UI
+  setTimeout(() => {
+    const btn = document.getElementById('apmImageBtn');
+    const input = document.getElementById('apmCardImage');
+    const wrap = document.getElementById('apmImagePreviewWrap');
+    const removeBtn = document.getElementById('apmImageRemove');
+    if (btn && input) {
+      btn.addEventListener('click', () => input.click());
+      input.addEventListener('change', function() {
+        if (this.files?.[0]) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            wrap.style.display = '';
+            wrap.querySelector('img').src = e.target.result;
+            wrap.dataset.remove = '';
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+    }
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        wrap.style.display = 'none';
+        wrap.querySelector('img').src = '';
+        wrap.dataset.remove = 'true';
+        if (input) input.value = '';
+      });
+    }
+  }, 50);
 }
 
 async function delCard(id) {
   if (!requireAdminAccess()) return;
   if (!confirm('¿Eliminar este enlace?')) return;
   const card = fbCards.find(c => c.id === id);
+  if (card?.imageUrl) await deleteCardImage(id);
   await db.collection('cards').doc(id).delete();
   fbCards = fbCards.filter(c => c.id !== id);
   normalizeCardOrders(card?.categoryId);
@@ -1549,6 +1646,7 @@ function delCardByEl(el) {
   const id = el.dataset.cardId;
   const card = fbCards.find(c => c.id === id);
   if (!card || !confirm('¿Eliminar "' + escHtml(card.title) + '"?')) return;
+  if (card.imageUrl) deleteCardImage(card.id);
   if (canWriteToFirebase()) db.collection('cards').doc(card.id).delete();
   fbCards = fbCards.filter(c => c.id !== card.id);
   normalizeCardOrders(card.categoryId);
@@ -1563,12 +1661,18 @@ function editCard(el) {
   const card = fbCards.find(c => c.id === id);
   if (!card) return;
   const catOpts = fbCats.map(c => '<option value="' + escHtml(c.id) + '"' + (c.id === card.categoryId ? ' selected' : '') + '>' + escHtml(c.name) + '</option>').join('');
+  const imgPreview = card.imageUrl ? '<div class="apm-image-preview-wrap" id="apmImagePreviewWrap"><img src="' + escHtml(card.imageUrl) + '" class="apm-image-preview"><button type="button" class="apm-image-remove" id="apmImageRemove">✕</button></div>' : '<div class="apm-image-preview-wrap" id="apmImagePreviewWrap" style="display:none"><img class="apm-image-preview" id="apmImagePreview"><button type="button" class="apm-image-remove" id="apmImageRemove">✕</button></div>';
   showModal('Editar enlace',
     '<div class="ap-form">' +
     '<label>Título <input type="text" id="apmCardTitle" value="' + escHtml(card.title) + '"></label>' +
     '<label>Descripción <textarea id="apmCardDesc">' + escHtml(card.description) + '</textarea></label>' +
     '<label>URL <input type="url" id="apmCardUrl" value="' + escHtml(card.url) + '"></label>' +
     '<div class="ap-row"><label>Categoría <select id="apmCardCat">' + catOpts + '</select></label><label>Icono <input type="text" id="apmCardIcon" value="' + escHtml(card.icon) + '"></label></div>' +
+    '<label>Imagen <div class="apm-image-upload">' +
+    '<input type="file" id="apmCardImage" accept="image/*" hidden>' +
+    '<button type="button" class="apm-image-btn" id="apmImageBtn">📷 Subir imagen</button>' +
+    imgPreview +
+    '<span class="ap-hint">La imagen reemplaza al icono emoji. 60×60px recomendado.</span></div></label>' +
     '<div class="ap-row"><label class="ap-toggle"><input type="checkbox" id="apmCardNew"' + (card.isNew ? ' checked' : '') + '> Nuevo</label><label class="ap-toggle"><input type="checkbox" id="apmCardUpdated"' + (card.isUpdated ? ' checked' : '') + '> Actualizado</label></div>' +
     '</div>',
     async () => {
@@ -1581,6 +1685,15 @@ function editCard(el) {
       card.isNew = document.getElementById('apmCardNew').checked;
       card.isUpdated = document.getElementById('apmCardUpdated').checked;
       if (!card.title || !card.url) return;
+      const fileInput = document.getElementById('apmCardImage');
+      const removeChecked = document.getElementById('apmImagePreviewWrap').dataset.remove === 'true';
+      if (fileInput?.files?.[0]) {
+        const url = await uploadCardImage(fileInput.files[0], card.id);
+        card.imageUrl = url;
+      } else if (removeChecked) {
+        await deleteCardImage(card.id);
+        card.imageUrl = '';
+      }
       if (oldCategoryId !== card.categoryId) {
         card.order = fbCards.filter(c => c.categoryId === card.categoryId && c.id !== card.id).length;
         normalizeCardOrders(oldCategoryId);
@@ -1588,7 +1701,8 @@ function editCard(el) {
       if (canWriteToFirebase()) await db.collection('cards').doc(card.id).update({
         title: card.title, description: card.description, url: card.url,
         categoryId: card.categoryId, icon: card.icon,
-        isNew: card.isNew, isUpdated: card.isUpdated, order: card.order
+        isNew: card.isNew, isUpdated: card.isUpdated, order: card.order,
+        imageUrl: card.imageUrl || ''
       });
       if (oldCategoryId !== card.categoryId) await saveCardOrder(oldCategoryId);
       closeModal();
@@ -1596,6 +1710,38 @@ function editCard(el) {
       if (editMode) setupEditUI();
     }
   );
+  wireImageUpload();
+}
+
+function wireImageUpload() {
+  setTimeout(() => {
+    const btn = document.getElementById('apmImageBtn');
+    const input = document.getElementById('apmCardImage');
+    const wrap = document.getElementById('apmImagePreviewWrap');
+    const removeBtn = document.getElementById('apmImageRemove');
+    if (btn && input) {
+      btn.addEventListener('click', () => input.click());
+      input.addEventListener('change', function() {
+        if (this.files?.[0]) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            wrap.style.display = '';
+            wrap.querySelector('img').src = e.target.result;
+            wrap.dataset.remove = '';
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+    }
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        wrap.style.display = 'none';
+        wrap.querySelector('img').src = '';
+        wrap.dataset.remove = 'true';
+        if (input) input.value = '';
+      });
+    }
+  }, 50);
 }
 
 function addCardToSection(sectionSlug) {
@@ -1608,6 +1754,11 @@ function addCardToSection(sectionSlug) {
   form.className = 'inline-card-form';
   form.innerHTML =
     '<label>Icono <div class="icf-icons">' + EMOJIS.map((e, i) => '<button type="button" class="icf-icon' + (i === 0 ? ' active' : '') + '" data-icon="' + e + '">' + e + '</button>').join('') + '</div><input type="text" class="icf-icon-input" value="' + escHtml(EMOJIS[0]) + '"></label>' +
+    '<label>Imagen <div class="icf-image-upload">' +
+    '<input type="file" class="icf-image-input" accept="image/*" hidden>' +
+    '<button type="button" class="icf-image-btn">📷 Subir imagen</button>' +
+    '<div class="icf-image-preview-wrap" style="display:none"><img class="icf-image-preview"><button type="button" class="icf-image-remove">✕</button></div>' +
+    '<span style="font-size:0.72rem;color:#aaa;font-weight:400">Reemplaza al icono emoji</span></div></label>' +
     '<div class="icf-grid">' +
     '<label>Nombre <input type="text" class="icf-title" placeholder="Ej: Child Protection Reporting"></label>' +
     '<label>Link <input type="url" class="icf-url" placeholder="https://..."></label>' +
@@ -1627,6 +1778,31 @@ function addCardToSection(sectionSlug) {
       form.querySelector('.icf-icon-input').value = btn.dataset.icon;
     });
   });
+  // Wire inline image upload
+  const imgInput = form.querySelector('.icf-image-input');
+  const imgBtn = form.querySelector('.icf-image-btn');
+  const imgWrap = form.querySelector('.icf-image-preview-wrap');
+  const imgPrev = form.querySelector('.icf-image-preview');
+  const imgRemove = form.querySelector('.icf-image-remove');
+  let currentFile = null;
+  imgBtn.addEventListener('click', () => imgInput.click());
+  imgInput.addEventListener('change', function() {
+    if (this.files?.[0]) {
+      currentFile = this.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        imgWrap.style.display = '';
+        imgPrev.src = e.target.result;
+      };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+  imgRemove.addEventListener('click', () => {
+    imgWrap.style.display = 'none';
+    imgPrev.src = '';
+    imgInput.value = '';
+    currentFile = null;
+  });
   form.querySelector('.icf-cancel').addEventListener('click', () => form.remove());
   form.querySelector('.icf-save').addEventListener('click', async () => {
     const d = {
@@ -1638,12 +1814,19 @@ function addCardToSection(sectionSlug) {
       isNew: form.querySelector('.icf-new').checked,
       isUpdated: form.querySelector('.icf-updated').checked,
       order: fbCards.filter(c => c.categoryId === cat.id).length,
-      enabled: true
+      enabled: true,
+      imageUrl: ''
     };
     if (!d.title || !d.url) { showToast('Completa nombre y link.', 'error'); return; }
     if (!requireAdminAccess()) return;
     const r = await db.collection('cards').add(d);
-    fbCards.push({ id: r.id, ...d });
+    d.id = r.id;
+    if (currentFile) {
+      const url = await uploadCardImage(currentFile, r.id);
+      d.imageUrl = url;
+      await db.collection('cards').doc(r.id).update({ imageUrl: url });
+    }
+    fbCards.push(d);
     renderFB();
     if (editMode) setupEditUI();
     showToast('Enlace agregado', 'success');
