@@ -370,14 +370,13 @@ body.portal-locked .portal-gate { display: flex; }
 }
 .launch-tools {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: start;
   justify-content: center;
-  gap: 16px;
+  gap: 14px;
   margin: 22px auto 8px;
 }
 .search-wrap {
-  width: min(680px, 100%); margin: 0 auto;
+  flex: 0 1 430px; max-width: 430px; margin: 0;
   position: relative;
   animation: fadeUp 0.6s ease-out 0.3s both;
 }
@@ -787,8 +786,8 @@ footer .footer-links a:hover { color: #fff; }
   .main-content { padding: 0 20px; }
   .below-hero-tools { padding: 0 20px; }
   .hero-copy { margin-top: -34px; font-size: 0.92rem; max-width: 620px; }
-  .launch-tools { gap: 12px; margin: 18px 0 4px; }
-  .search-wrap, .most-used-section { width: 100%; max-width: 100%; }
+  .launch-tools { flex-direction: column; gap: 10px; margin: 18px 0 4px; }
+  .search-wrap, .most-used-section { flex: 1 1 auto; width: 100%; max-width: 100%; }
   .section { padding: 24px 0; }
   .section-header { margin: 8px 0 26px 50%; padding: 16px 20px; min-height: 56px; }
   .section-header h2 { font-size: 1rem; }
@@ -925,8 +924,9 @@ footer .footer-links a:hover { color: #fff; }
   padding: 0;
   display: none;
   animation: fadeIn 0.3s ease;
-  width: 100%;
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 560px;
 }
 .most-used-section.visible { display: block; }
 .most-used-header {
@@ -949,7 +949,7 @@ footer .footer-links a:hover { color: #fff; }
   font-size: 0.72rem; font-weight: 700; color: color-mix(in srgb, var(--primary) 72%, var(--text));
   text-decoration: none; cursor: pointer;
   transition: all 0.2s;
-  max-width: 230px; white-space: nowrap;
+  max-width: 190px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
 .most-used-chip:hover {
