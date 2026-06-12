@@ -37,4 +37,4 @@ Upload `firestore.rules` manually in Firebase Console > Firestore Database > Rul
 This version blocks Edit Mode unless Firebase Auth has a currently logged-in authorized admin. The default admin list is exact-email only in `js/app.js` (`ADMIN_EMAILS`).
 
 ## Portal access
-The portal UI is locked until the user signs in with a verified Google account ending in `@cms.edu.do`. Because GitHub Pages is static hosting, private portal data should live in Firestore behind rules, not hard-coded in frontend files.
+The portal UI is locked until the user signs in with a verified Google account.
